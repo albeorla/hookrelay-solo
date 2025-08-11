@@ -10,8 +10,4 @@ variable "project_name" {
   default     = "hookrelay"
 }
 
-variable "ingest_container_port" {
-  type        = number
-  description = "Container port for ingest service"
-  default     = 3000
-}
+// Ingest is handled by API Gateway -> SQS; no container port needed
