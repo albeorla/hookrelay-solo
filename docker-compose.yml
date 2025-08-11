@@ -1,0 +1,49 @@
+version: "3.9"
+services:
+  localstack:
+    image: localstack/localstack:stable
+    environment:
+      - SERVICES=sqs,dynamodb,s3
+      - DEBUG=0
+      - AWS_DEFAULT_REGION=us-east-1
+    ports:
+      - "4566:4566"
+    volumes:
+      - "localstack-data:/var/lib/localstack"
+
+  ingest:
+    build: ./services/ingest-local
+    environment:
+      - PORT=3000
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - SQS_URL=http://localstack:4566/000000000000/hookrelay-delivery-attempts
+      - AWS_SQS_ENDPOINT=http://localstack:4566
+    depends_on:
+      - localstack
+    ports:
+      - "3000:3000"
+
+  worker:
+    build: ./services/worker
+    environment:
+      - AWS_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - SQS_URL=http://localstack:4566/000000000000/hookrelay-delivery-attempts
+      - ENDPOINTS_TABLE=hookrelay-endpoints
+      - IDEMPOTENCY_TABLE=hookrelay-idempotency
+      - DELIVERIES_TABLE=hookrelay-deliveries
+      - DLQ_BUCKET=hookrelay-dlq
+      - AWS_SQS_ENDPOINT=http://localstack:4566
+      - AWS_DDB_ENDPOINT=http://localstack:4566
+      - AWS_S3_ENDPOINT=http://localstack:4566
+      - RETRY_BASE_SECONDS=2
+      - RETRY_MAX_ATTEMPTS=6
+    depends_on:
+      - localstack
+
+volumes:
+  localstack-data:
+

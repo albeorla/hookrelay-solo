@@ -1,0 +1,42 @@
+import express from "express";
+import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
+
+const app = express();
+app.use(express.json({ limit: "2mb" }));
+
+const port = Number(process.env.PORT || 3000);
+const sqsUrl = process.env.SQS_URL!;
+const region = process.env.AWS_REGION || "us-east-1";
+const sqsEndpoint = process.env.AWS_SQS_ENDPOINT;
+
+const sqs = new SQSClient({
+  region,
+  endpoint: sqsEndpoint,
+  credentials: sqsEndpoint ? { accessKeyId: "test", secretAccessKey: "test" } : undefined,
+});
+
+app.get("/healthz", (_req, res) => res.status(200).send("ok"));
+
+app.post("/ingest/:endpointId", async (req, res) => {
+  try {
+    const payload = {
+      endpoint_id: req.params.endpointId,
+      raw_body: JSON.stringify(req.body ?? {}),
+      headers: {
+        stripe_signature: req.header("Stripe-Signature"),
+        x_hub_sig_256: req.header("X-Hub-Signature-256"),
+        x_signature: req.header("X-Signature"),
+        x_timestamp: req.header("X-Timestamp"),
+        idempotency_key: req.header("Idempotency-Key"),
+      },
+      received_at: Date.now(),
+    };
+    await sqs.send(new SendMessageCommand({ QueueUrl: sqsUrl, MessageBody: JSON.stringify(payload) }));
+    res.status(202).json({ delivery_id: `${Date.now()}-${Math.random().toString(16).slice(2, 10)}` });
+  } catch (e: any) {
+    res.status(500).json({ error: String(e?.message || e) });
+  }
+});
+
+app.listen(port, () => console.log(`ingest-local listening on :${port}`));
+

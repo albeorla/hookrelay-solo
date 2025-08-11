@@ -5,9 +5,16 @@ import fetch from "node-fetch";
 import crypto from "crypto";
 
 const sqsUrl = process.env.SQS_URL;
-const sqs = new SQSClient({});
-const ddb = new DynamoDBClient({});
-const s3 = new S3Client({});
+const region = process.env.AWS_REGION || "us-east-1";
+const sqsEndpoint = process.env.AWS_SQS_ENDPOINT;
+const ddbEndpoint = process.env.AWS_DDB_ENDPOINT;
+const s3Endpoint = process.env.AWS_S3_ENDPOINT;
+
+const sharedCreds = sqsEndpoint || ddbEndpoint || s3Endpoint ? { accessKeyId: "test", secretAccessKey: "test" } : undefined;
+
+const sqs = new SQSClient({ region, endpoint: sqsEndpoint, credentials: sharedCreds });
+const ddb = new DynamoDBClient({ region, endpoint: ddbEndpoint, credentials: sharedCreds });
+const s3 = new S3Client({ region, endpoint: s3Endpoint, credentials: sharedCreds, forcePathStyle: !!s3Endpoint });
 
 const endpointsTable = process.env.ENDPOINTS_TABLE!;
 const idempotencyTable = process.env.IDEMPOTENCY_TABLE!;
