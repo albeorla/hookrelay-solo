@@ -8,10 +8,11 @@
   },
   "dependencies": {
     "@aws-sdk/client-sqs": "^3.684.0",
+    "@aws-sdk/client-dynamodb": "^3.684.0",
+    "@aws-sdk/client-s3": "^3.684.0",
     "node-fetch": "^3.3.2"
   },
   "devDependencies": {
     "typescript": "^5.8.2"
   }
 }
-

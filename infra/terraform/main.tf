@@ -177,7 +177,15 @@ resource "aws_ecs_task_definition" "worker" {
       name      = "worker"
       image     = local.worker_image
       essential = true
-      environment = [ { name = "SQS_URL", value = aws_sqs_queue.delivery_attempts.id } ]
+      environment = [
+        { name = "SQS_URL", value = aws_sqs_queue.delivery_attempts.id },
+        { name = "ENDPOINTS_TABLE", value = aws_dynamodb_table.endpoints.name },
+        { name = "IDEMPOTENCY_TABLE", value = aws_dynamodb_table.idempotency.name },
+        { name = "DELIVERIES_TABLE", value = aws_dynamodb_table.deliveries.name },
+        { name = "DLQ_BUCKET", value = aws_s3_bucket.dlq_payloads.bucket },
+        { name = "RETRY_BASE_SECONDS", value = "2" },
+        { name = "RETRY_MAX_ATTEMPTS", value = "6" }
+      ]
       logConfiguration = {
         logDriver = "awslogs"
         options   = { awslogs-group = aws_cloudwatch_log_group.ecs.name, awslogs-region = data.aws_region.current.name, awslogs-stream-prefix = "worker" }
@@ -240,10 +248,12 @@ resource "aws_apigatewayv2_integration" "sqs" {
   credentials_arn        = aws_iam_role.apigw_sqs.arn
   payload_format_version = "1.0"
   integration_uri        = "arn:aws:apigateway:${data.aws_region.current.name}:sqs:path/${data.aws_caller_identity.current.account_id}/${aws_sqs_queue.delivery_attempts.name}"
-  request_parameters = {
-    "append:header.Content-Type"    = "application/x-www-form-urlencoded"
-    "append:querystring.Action"     = "SendMessage"
-    "append:querystring.MessageBody" = "$request.body"
+  request_templates = {
+    "application/json" = <<EOT
+Action=SendMessage&MessageBody=$util.urlEncode(
+  "{\"endpoint_id\":\"$util.escapeJavaScript($request.path.endpointId)\",\"raw_body\":$util.escapeJavaScript($input.body),\"headers\":{\"stripe_signature\":\"$util.escapeJavaScript($request.header['Stripe-Signature'])\",\"x_hub_sig_256\":\"$util.escapeJavaScript($request.header['X-Hub-Signature-256'])\",\"x_signature\":\"$util.escapeJavaScript($request.header['X-Signature'])\",\"x_timestamp\":\"$util.escapeJavaScript($request.header['X-Timestamp'])\",\"idempotency_key\":\"$util.escapeJavaScript($request.header['Idempotency-Key'])\"}},\"received_at\":$context.requestTimeEpoch}"
+)
+EOT
   }
 }
 
