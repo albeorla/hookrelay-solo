@@ -291,13 +291,94 @@ resource "aws_ecs_service" "worker" {
   name            = "${var.project_name}-worker"
   cluster         = aws_ecs_cluster.this.id
   task_definition = aws_ecs_task_definition.worker.arn
-  desired_count   = 1
-  launch_type     = "FARGATE"
+  desired_count   = 0
   platform_version = "1.4.0"
+
+  capacity_provider_strategy {
+    capacity_provider = "FARGATE_SPOT"
+    weight            = 1
+    base              = 0
+  }
 
   network_configuration {
     subnets         = data.aws_subnets.default.ids
     security_groups = [aws_security_group.service.id]
     assign_public_ip = true
   }
+}
+
+# Scale-to-zero worker based on SQS backlog
+resource "aws_appautoscaling_target" "worker" {
+  max_capacity       = 2
+  min_capacity       = 0
+  resource_id        = "service/${aws_ecs_cluster.this.name}/${aws_ecs_service.worker.name}"
+  scalable_dimension = "ecs:service:DesiredCount"
+  service_namespace  = "ecs"
+}
+
+resource "aws_appautoscaling_policy" "worker_scale_up" {
+  name               = "${var.project_name}-worker-scale-up"
+  policy_type        = "StepScaling"
+  resource_id        = aws_appautoscaling_target.worker.resource_id
+  scalable_dimension = aws_appautoscaling_target.worker.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.worker.service_namespace
+
+  step_scaling_policy_configuration {
+    adjustment_type         = "ChangeInCapacity"
+    cooldown                = 30
+    metric_aggregation_type = "Average"
+
+    step_adjustment {
+      scaling_adjustment          = 1
+      metric_interval_lower_bound = 0
+    }
+  }
+}
+
+resource "aws_appautoscaling_policy" "worker_scale_down" {
+  name               = "${var.project_name}-worker-scale-down"
+  policy_type        = "StepScaling"
+  resource_id        = aws_appautoscaling_target.worker.resource_id
+  scalable_dimension = aws_appautoscaling_target.worker.scalable_dimension
+  service_namespace  = aws_appautoscaling_target.worker.service_namespace
+
+  step_scaling_policy_configuration {
+    adjustment_type         = "ChangeInCapacity"
+    cooldown                = 60
+    metric_aggregation_type = "Average"
+
+    step_adjustment {
+      scaling_adjustment           = -1
+      metric_interval_upper_bound  = 1
+    }
+  }
+}
+
+resource "aws_cloudwatch_metric_alarm" "sqs_backlog_high" {
+  alarm_name          = "${var.project_name}-sqs-backlog-high"
+  comparison_operator = "GreaterThanOrEqualToThreshold"
+  evaluation_periods  = 1
+  metric_name         = "ApproximateNumberOfMessagesVisible"
+  namespace           = "AWS/SQS"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 1
+  alarm_description   = "Scale up worker when SQS has messages"
+  dimensions = { QueueName = aws_sqs_queue.delivery_attempts.name }
+  alarm_actions = [aws_appautoscaling_policy.worker_scale_up.arn]
+}
+
+resource "aws_cloudwatch_metric_alarm" "sqs_backlog_low" {
+  alarm_name          = "${var.project_name}-sqs-backlog-low"
+  comparison_operator = "LessThanThreshold"
+  evaluation_periods  = 2
+  metric_name         = "ApproximateNumberOfMessagesVisible"
+  namespace           = "AWS/SQS"
+  period              = 60
+  statistic           = "Average"
+  threshold           = 1
+  treat_missing_data  = "notBreaching"
+  alarm_description   = "Scale down worker when SQS empty"
+  dimensions = { QueueName = aws_sqs_queue.delivery_attempts.name }
+  alarm_actions = [aws_appautoscaling_policy.worker_scale_down.arn]
 }
