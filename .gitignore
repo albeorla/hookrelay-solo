@@ -1,0 +1,93 @@
+# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
+
+# dependencies
+/node_modules
+/.pnp
+.pnp.js
+
+# testing
+/coverage
+
+# playwright
+/e2e/.auth
+/playwright-report
+/test-results
+
+# build artifacts and logs
+/act-logs
+/ci-*-logs
+/ci-*-results
+*.log
+
+# database
+/prisma/db.sqlite
+/prisma/db.sqlite-journal
+db.sqlite
+
+# next.js
+/.next/
+/out/
+next-env.d.ts
+
+# production
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# local env files
+# do not commit any .env files to git, except for the .env.example file. https://create.t3.gg/en/usage/env-variables#using-environment-variables
+.env
+.env*.local
+
+# vercel
+.vercel
+
+# typescript
+*.tsbuildinfo
+.tsbuildinfo
+
+# eslint cache
+.eslintcache
+
+# prettier cache
+.prettier-cache
+node_modules/.cache
+
+# idea files
+.idea
+
+# Claude
+.claude/settings.local.json
+.out/
+
+# Todo2 - AI-powered task management directories
+.cursor/rules/todo2-overview.mdc
+.cursor/rules/todo2.mdc
+.cursor/mcp.json
+.todo2/
+
+# Docker build context
+.dockerignore
+
+# Additional cache directories
+.turbo
+.swc
+*.tsbuildinfo
+.tsbuildinfo
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db

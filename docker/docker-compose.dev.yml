@@ -1,0 +1,35 @@
+version: '3.8'
+services:
+  db:
+    image: postgres:15
+    env_file: .env
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/data
+  
+  app:
+    build: 
+      context: ..
+      dockerfile: docker/Dockerfile
+    env_file: .env
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      MODE: development
+    ports:
+      - "3000:3000"
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - /app/.next
+    command: yarn dev
+
+volumes:
+  postgres_data:

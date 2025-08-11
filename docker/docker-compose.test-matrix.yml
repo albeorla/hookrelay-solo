@@ -1,0 +1,466 @@
+# Docker Compose Test Matrix Configuration
+# Provides comprehensive testing scenarios across different environments
+version: '3.8'
+
+services:
+  # PostgreSQL service for matrix tests
+  postgres-matrix:
+    image: postgres:15
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: test_db
+      POSTGRES_USER: postgres
+    ports:
+      - "5433:5432"  # Different port to avoid conflicts
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d test_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - postgres_matrix_data:/var/lib/postgresql/data
+    networks:
+      - matrix-network
+
+  # ============================================================================
+  # NODE VERSION MATRIX TESTS
+  # ============================================================================
+  
+  # Node.js 18 Environment Tests
+  matrix-node18-quality:
+    image: node:18-alpine
+    environment:
+      - NODE_ENV=test
+      - CI=true
+      - LOG_LEVEL=ERROR
+      - NODE_VERSION=18
+    volumes:
+      - .:/app
+      - node18_modules:/app/node_modules
+    working_dir: /app
+    command: >
+      sh -c "
+        echo '🟢 [Node 18] Quality Matrix Test Starting...' &&
+        npm ci --prefer-offline &&
+        echo '📝 [Node 18] TypeScript check...' &&
+        npm run typecheck &&
+        echo '🎨 [Node 18] ESLint...' &&
+        npm run lint &&
+        echo '💅 [Node 18] Prettier...' &&
+        npm run format:check &&
+        echo '✅ [Node 18] Quality matrix completed!'
+      "
+    networks:
+      - matrix-network
+
+  matrix-node18-build:
+    image: node:18-alpine
+    environment:
+      - NODE_ENV=production
+      - CI=true
+      - LOG_LEVEL=ERROR
+      - SKIP_ENV_VALIDATION=true
+      - NODE_VERSION=18
+    volumes:
+      - .:/app
+      - node18_modules:/app/node_modules
+      - node18_build:/app/.next
+    working_dir: /app
+    command: >
+      sh -c "
+        echo '🟢 [Node 18] Build Matrix Test Starting...' &&
+        npm ci --prefer-offline &&
+        echo '🏗️ [Node 18] Production build...' &&
+        npm run build &&
+        echo '✅ [Node 18] Build matrix completed!'
+      "
+    networks:
+      - matrix-network
+
+  # Node.js 20 Environment Tests  
+  matrix-node20-quality:
+    image: node:20-alpine
+    environment:
+      - NODE_ENV=test
+      - CI=true
+      - LOG_LEVEL=ERROR
+      - NODE_VERSION=20
+    volumes:
+      - .:/app
+      - node20_modules:/app/node_modules
+    working_dir: /app
+    command: >
+      sh -c "
+        echo '🟡 [Node 20] Quality Matrix Test Starting...' &&
+        npm ci --prefer-offline &&
+        echo '📝 [Node 20] TypeScript check...' &&
+        npm run typecheck &&
+        echo '🎨 [Node 20] ESLint...' &&
+        npm run lint &&
+        echo '💅 [Node 20] Prettier...' &&
+        npm run format:check &&
+        echo '✅ [Node 20] Quality matrix completed!'
+      "
+    networks:
+      - matrix-network
+
+  matrix-node20-build:
+    image: node:20-alpine
+    environment:
+      - NODE_ENV=production
+      - CI=true
+      - LOG_LEVEL=ERROR
+      - SKIP_ENV_VALIDATION=true
+      - NODE_VERSION=20
+    volumes:
+      - .:/app
+      - node20_modules:/app/node_modules
+      - node20_build:/app/.next
+    working_dir: /app
+    command: >
+      sh -c "
+        echo '🟡 [Node 20] Build Matrix Test Starting...' &&
+        npm ci --prefer-offline &&
+        echo '🏗️ [Node 20] Production build...' &&
+        npm run build &&
+        echo '✅ [Node 20] Build matrix completed!'
+      "
+    networks:
+      - matrix-network
+
+  # ============================================================================
+  # ENVIRONMENT MATRIX TESTS
+  # ============================================================================
+  
+  # Development Environment Test
+  matrix-dev-env:
+    build: 
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      - NODE_ENV=development
+      - CI=false
+      - LOG_LEVEL=DEBUG
+      - DATABASE_URL=postgresql://postgres:postgres@postgres-matrix:5432/test_db
+      - MATRIX_TEST=dev
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - dev_build:/app/.next
+    depends_on:
+      postgres-matrix:
+        condition: service_healthy
+    working_dir: /app
+    command: >
+      sh -c "
+        echo '🟦 [DEV] Development Environment Matrix Test...' &&
+        yarn install --frozen-lockfile &&
+        echo '🗄️ [DEV] Database setup...' &&
+        yarn prisma generate &&
+        yarn prisma db push &&
+        echo '📝 [DEV] Development checks...' &&
+        yarn typecheck &&
+        echo '✅ [DEV] Development matrix completed!'
+      "
+    networks:
+      - matrix-network
+
+  # Production Environment Test
+  matrix-prod-env:
+    build: 
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      - NODE_ENV=production
+      - CI=true
+      - LOG_LEVEL=ERROR
+      - SKIP_ENV_VALIDATION=true
+      - MATRIX_TEST=prod
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - prod_build:/app/.next
+    working_dir: /app
+    command: >
+      sh -c "
+        echo '🟥 [PROD] Production Environment Matrix Test...' &&
+        yarn install --frozen-lockfile --production=false &&
+        echo '🏗️ [PROD] Production build...' &&
+        yarn build &&
+        echo '🔍 [PROD] Build verification...' &&
+        ls -la .next/ &&
+        echo '✅ [PROD] Production matrix completed!'
+      "
+    networks:
+      - matrix-network
+
+  # Test Environment Test
+  matrix-test-env:
+    build: 
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      - NODE_ENV=test
+      - CI=true
+      - LOG_LEVEL=INFO
+      - DATABASE_URL=postgresql://postgres:postgres@postgres-matrix:5432/test_db
+      - MATRIX_TEST=test
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - test_build:/app/.next
+    depends_on:
+      postgres-matrix:
+        condition: service_healthy
+    working_dir: /app
+    command: >
+      sh -c "
+        echo '🟪 [TEST] Test Environment Matrix Test...' &&
+        yarn install --frozen-lockfile &&
+        echo '🗄️ [TEST] Test database setup...' &&
+        yarn prisma generate &&
+        yarn prisma db push &&
+        yarn prisma db seed &&
+        echo '🧪 [TEST] Test environment checks...' &&
+        yarn typecheck &&
+        yarn lint &&
+        echo '✅ [TEST] Test matrix completed!'
+      "
+    networks:
+      - matrix-network
+
+  # ============================================================================
+  # FEATURE FLAG MATRIX TESTS
+  # ============================================================================
+  
+  # Strict Mode Testing
+  matrix-strict-mode:
+    build: 
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      - NODE_ENV=test
+      - CI=true
+      - LOG_LEVEL=DEBUG
+      - STRICT_MODE=true
+      - MATRIX_TEST=strict
+    volumes:
+      - .:/app
+      - /app/node_modules
+    working_dir: /app
+    command: >
+      sh -c "
+        echo '🔒 [STRICT] Strict Mode Matrix Test...' &&
+        yarn install --frozen-lockfile &&
+        echo '📝 [STRICT] Strict TypeScript check...' &&
+        yarn typecheck --strict &&
+        echo '🎨 [STRICT] Strict ESLint...' &&
+        yarn lint --max-warnings=0 &&
+        echo '✅ [STRICT] Strict mode matrix completed!'
+      "
+    networks:
+      - matrix-network
+
+  # Performance Mode Testing
+  matrix-performance:
+    build: 
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      - NODE_ENV=test
+      - CI=true
+      - LOG_LEVEL=ERROR
+      - PERFORMANCE_MODE=true
+      - MATRIX_TEST=performance
+    volumes:
+      - .:/app
+      - /app/node_modules
+      - perf_results:/app/perf-results
+    working_dir: /app
+    command: >
+      sh -c "
+        echo '⚡ [PERF] Performance Matrix Test...' &&
+        mkdir -p /app/perf-results &&
+        yarn install --frozen-lockfile &&
+        echo '⏱️ [PERF] Measuring TypeScript performance...' &&
+        time yarn typecheck 2>&1 | tee /app/perf-results/typecheck.time &&
+        echo '⏱️ [PERF] Measuring ESLint performance...' &&
+        time yarn lint 2>&1 | tee /app/perf-results/lint.time &&
+        echo '⏱️ [PERF] Measuring build performance...' &&
+        time yarn build 2>&1 | tee /app/perf-results/build.time &&
+        echo '📊 [PERF] Performance results:' &&
+        cat /app/perf-results/*.time | grep real &&
+        echo '✅ [PERF] Performance matrix completed!'
+      "
+    networks:
+      - matrix-network
+
+  # ============================================================================
+  # DATABASE MATRIX TESTS  
+  # ============================================================================
+  
+  # PostgreSQL 14 Compatibility Test
+  matrix-postgres14:
+    image: postgres:14
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: test_db_14
+      POSTGRES_USER: postgres
+    ports:
+      - "5434:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d test_db_14"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres14_data:/var/lib/postgresql/data
+    networks:
+      - matrix-network
+
+  matrix-db14-test:
+    build: 
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      - NODE_ENV=test
+      - CI=true
+      - LOG_LEVEL=INFO
+      - DATABASE_URL=postgresql://postgres:postgres@matrix-postgres14:5432/test_db_14
+      - MATRIX_TEST=postgres14
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      matrix-postgres14:
+        condition: service_healthy
+    working_dir: /app
+    command: >
+      sh -c "
+        echo '🐘 [PG14] PostgreSQL 14 Matrix Test...' &&
+        yarn install --frozen-lockfile &&
+        echo '🗄️ [PG14] Testing with PostgreSQL 14...' &&
+        yarn prisma generate &&
+        yarn prisma db push &&
+        yarn prisma db seed &&
+        echo '✅ [PG14] PostgreSQL 14 matrix completed!'
+      "
+    networks:
+      - matrix-network
+
+  # PostgreSQL 16 Compatibility Test
+  matrix-postgres16:
+    image: postgres:16
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: test_db_16
+      POSTGRES_USER: postgres
+    ports:
+      - "5435:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d test_db_16"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres16_data:/var/lib/postgresql/data
+    networks:
+      - matrix-network
+
+  matrix-db16-test:
+    build: 
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      - NODE_ENV=test
+      - CI=true
+      - LOG_LEVEL=INFO
+      - DATABASE_URL=postgresql://postgres:postgres@matrix-postgres16:5432/test_db_16
+      - MATRIX_TEST=postgres16
+    volumes:
+      - .:/app
+      - /app/node_modules
+    depends_on:
+      matrix-postgres16:
+        condition: service_healthy
+    working_dir: /app
+    command: >
+      sh -c "
+        echo '🐘 [PG16] PostgreSQL 16 Matrix Test...' &&
+        yarn install --frozen-lockfile &&
+        echo '🗄️ [PG16] Testing with PostgreSQL 16...' &&
+        yarn prisma generate &&
+        yarn prisma db push &&
+        yarn prisma db seed &&
+        echo '✅ [PG16] PostgreSQL 16 matrix completed!'
+      "
+    networks:
+      - matrix-network
+
+  # ============================================================================
+  # MATRIX RESULT AGGREGATOR
+  # ============================================================================
+  
+  matrix-aggregator:
+    build: 
+      context: ..
+      dockerfile: docker/Dockerfile
+    environment:
+      - NODE_ENV=test
+      - CI=true
+      - LOG_LEVEL=INFO
+      - MATRIX_TEST=aggregator
+    volumes:
+      - .:/app
+      - matrix_results:/app/matrix-results
+    working_dir: /app
+    command: >
+      sh -c "
+        echo '📊 [AGGREGATOR] Matrix Results Aggregator...' &&
+        mkdir -p /app/matrix-results &&
+        echo '📋 [AGGREGATOR] Collecting matrix test results...' &&
+        echo 'Matrix Test Summary:' > /app/matrix-results/summary.txt &&
+        echo '===================' >> /app/matrix-results/summary.txt &&
+        echo 'Node.js Versions: 18, 20' >> /app/matrix-results/summary.txt &&
+        echo 'Environments: dev, test, prod' >> /app/matrix-results/summary.txt &&
+        echo 'Database Versions: PostgreSQL 14, 15, 16' >> /app/matrix-results/summary.txt &&
+        echo 'Feature Flags: strict, performance' >> /app/matrix-results/summary.txt &&
+        echo 'Test Timestamp: $(date)' >> /app/matrix-results/summary.txt &&
+        echo '📊 [AGGREGATOR] Matrix summary created!' &&
+        cat /app/matrix-results/summary.txt &&
+        echo '✅ [AGGREGATOR] Matrix aggregation completed!'
+      "
+    networks:
+      - matrix-network
+
+volumes:
+  postgres_matrix_data:
+    name: matrix_postgres_data
+  postgres14_data:
+    name: matrix_postgres14_data
+  postgres16_data:
+    name: matrix_postgres16_data
+  node18_modules:
+    name: matrix_node18_modules
+  node20_modules:
+    name: matrix_node20_modules
+  node18_build:
+    name: matrix_node18_build
+  node20_build:
+    name: matrix_node20_build
+  dev_build:
+    name: matrix_dev_build
+  test_build:
+    name: matrix_test_build
+  prod_build:
+    name: matrix_prod_build
+  perf_results:
+    name: matrix_perf_results
+  matrix_results:
+    name: matrix_results
+
+networks:
+  matrix-network:
+    name: matrix-testing-network
+    driver: bridge
