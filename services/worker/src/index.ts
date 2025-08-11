@@ -1,10 +1,11 @@
-import { SQSClient, ReceiveMessageCommand, DeleteMessageCommand, SendMessageCommand } from "@aws-sdk/client-sqs";
+import { SQSClient, ReceiveMessageCommand, DeleteMessageCommand, SendMessageCommand, GetQueueUrlCommand } from "@aws-sdk/client-sqs";
 import { DynamoDBClient, GetItemCommand, PutItemCommand } from "@aws-sdk/client-dynamodb";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import fetch from "node-fetch";
 import crypto from "crypto";
 
-const sqsUrl = process.env.SQS_URL;
+let sqsUrl = process.env.SQS_URL;
+const queueName = process.env.QUEUE_NAME || "hookrelay-delivery-attempts";
 const region = process.env.AWS_REGION || "us-east-1";
 const sqsEndpoint = process.env.AWS_SQS_ENDPOINT;
 const ddbEndpoint = process.env.AWS_DDB_ENDPOINT;
@@ -94,16 +95,18 @@ function backoff(attempt: number) {
   return Math.floor(base + jitter);
 }
 
-if (!sqsUrl) {
-  console.error("SQS_URL not set; exiting.");
-  process.exit(1);
-}
+// SQS_URL is optional in local dev; when absent, resolve via GetQueueUrl using QUEUE_NAME
 
 async function run() {
   console.log("worker listening on SQS", sqsUrl);
   for (;;) {
+    // Resolve queue URL once if needed
+    if (!sqsUrl) {
+      const q = await sqs.send(new GetQueueUrlCommand({ QueueName: queueName }));
+      sqsUrl = q.QueueUrl;
+    }
     const res = await sqs.send(new ReceiveMessageCommand({
-      QueueUrl: sqsUrl,
+      QueueUrl: sqsUrl!,
       MaxNumberOfMessages: 5,
       WaitTimeSeconds: 20,
       VisibilityTimeout: 30,

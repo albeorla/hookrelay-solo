@@ -4,7 +4,19 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a T3 Stack starter application with authentication, RBAC, and shadcn/ui components. Built with Next.js 15, React 19, TypeScript, tRPC, Prisma, and PostgreSQL.
+This is a **composable startup platform** providing enterprise-grade infrastructure modules that any startup can bootstrap quickly. The architecture follows SOLID principles and GoF Design Patterns for maximum extensibility and maintainability.
+
+### Core Foundation
+1. **T3 Stack RBAC Dashboard**: Complete authentication, role-based access control, and admin UI that serves as the unified control plane for all modules
+2. **HookRelay Module**: Production-ready webhook processing with retry logic, HMAC verification, idempotency, and dead letter queues
+
+### Modular Expansion Vision
+The platform is designed for incremental module addition over time:
+- **Day 1**: Deploy with auth + webhook processing (covers 80% of SaaS infrastructure needs)
+- **Day N**: Add modules like billing, email, analytics, file storage as business requirements evolve
+- **Focus**: Spend time on unique business logic, not rebuilding common infrastructure
+
+Each module follows strict architectural patterns ensuring loose coupling, high cohesion, and enterprise-grade reliability.
 
 ## Essential Commands
 
@@ -77,54 +89,189 @@ docker compose up  # Development with hot reload
 
 ### Directory Structure
 ```
+├── aws/                    # AWS Lambda handlers (for production deployment)
+│   └── handlers/           # Lambda function handlers
 ├── docker/                 # Docker configuration files
 │   ├── Dockerfile          # Application container definition
-│   ├── docker-compose.yml  # Local development setup
+│   ├── docker-compose.yml  # Full microservices stack with LocalStack
 │   ├── docker-compose.ci.yml # CI environment configuration
 │   └── *.yml               # Additional compose configurations
 ├── docs/                   # Project documentation
+│   └── hookrelay/          # HookRelay business documentation
 ├── e2e/                    # End-to-end test files
+├── infra/                  # Infrastructure as code
+│   └── terraform/          # Terraform modules for AWS resources
 ├── scripts/                # Build and automation scripts
+│   ├── localstack/         # LocalStack bootstrap scripts
 │   ├── setup-tests.sh      # Test environment setup
-│   ├── start-database.sh   # Database startup script
 │   └── *.sh                # CI/CD and validation scripts
-├── src/                    # Application source code
+├── services/               # Microservices (HookRelay modules)
+│   ├── ingest-local/       # Webhook ingestion service (Express.js)
+│   └── worker/             # Webhook delivery worker (SQS consumer)
+├── src/                    # T3 Stack application source code
 │   ├── app/                # Next.js App Router pages and layouts
-│   │   ├── _components/    # Page-specific components
 │   │   ├── admin/          # Admin dashboard with RBAC management
-│   │   ├── api/            # API routes (auth, tRPC)
-│   │   └── auth/           # Authentication pages
+│   │   └── api/            # API routes (auth, tRPC)
 │   ├── components/ui/      # shadcn/ui components (25+ components)
 │   ├── config/             # Centralized application configuration
+│   ├── core/               # Module system architecture (future)
+│   │   ├── module-registry.ts # Module registration and lifecycle
+│   │   ├── event-bus.ts    # Inter-module communication
+│   │   └── container.ts    # Dependency injection
+│   ├── modules/            # Business modules (future)
+│   │   ├── billing/        # Stripe integration module
+│   │   ├── email/          # Email service module
+│   │   └── analytics/      # Analytics and tracking module
 │   ├── server/             # Backend logic
-│   │   ├── api/            # tRPC routers and procedures
-│   │   │   └── routers/    # Feature-specific routers (user, role, permission)
-│   │   ├── auth/           # NextAuth.js configuration
-│   │   └── db.ts           # Prisma database client
+│   │   └── api/routers/    # tRPC routers (user, role, permission)
 │   └── trpc/               # tRPC client configuration
 └── prisma/                 # Database schema and migrations
 ```
 
-### Key Architectural Patterns
+### SOLID Principles & Design Patterns
 
-1. **tRPC Router Pattern**: All API endpoints are defined as tRPC procedures in `src/server/api/routers/`. Each feature has its own router file that gets combined in `src/server/api/root.ts`.
+The platform architecture strictly adheres to SOLID principles and implements GoF Design Patterns for enterprise-grade modularity:
 
-2. **Authentication Flow**: NextAuth.js handles Discord OAuth. Protected procedures use `protectedProcedure` from tRPC context. Session data is available in `ctx.session`.
+#### SOLID Principles Implementation
+- **Single Responsibility**: Each module handles one business concern (auth, webhooks, billing, etc.)
+- **Open/Closed**: New modules can be added without modifying core infrastructure
+- **Liskov Substitution**: All modules implement common interfaces and can be swapped
+- **Interface Segregation**: Modules only depend on interfaces they actually use
+- **Dependency Inversion**: Core system depends on abstractions, not concrete implementations
 
-3. **RBAC System**: Complete role-based access control with:
+#### Core Design Patterns
+
+**1. Strategy Pattern** - Module implementations
+```typescript
+interface ModuleStrategy {
+  install(): Promise<void>
+  configure(config: ModuleConfig): void
+  getRoutes(): TRPCRouter[]
+  getMiddleware(): Middleware[]
+  getEventHandlers(): EventHandler[]
+}
+```
+
+**2. Factory Pattern** - Module instantiation
+```typescript
+class ModuleFactory {
+  static createModule(type: ModuleType, config: ModuleConfig): ModuleStrategy
+}
+```
+
+**3. Observer Pattern** - Inter-module communication
+```typescript
+interface ModuleEventBus {
+  subscribe(event: string, handler: EventHandler): void
+  publish(event: string, payload: any): Promise<void>
+}
+```
+
+**4. Dependency Injection** - Loose coupling
+```typescript
+class ModuleContainer {
+  register<T>(token: string, implementation: T): void
+  resolve<T>(token: string): T
+}
+```
+
+**5. Chain of Responsibility** - Request processing
+```typescript
+abstract class ModuleMiddleware {
+  protected next?: ModuleMiddleware
+  setNext(middleware: ModuleMiddleware): ModuleMiddleware
+  abstract handle(request: Request): Promise<Response>
+}
+```
+
+### Current Architectural Patterns
+
+**6. tRPC Router Pattern**: All API endpoints are defined as tRPC procedures in `src/server/api/routers/`. Each feature has its own router file that gets combined in `src/server/api/root.ts`.
+
+**7. Authentication Flow**: NextAuth.js handles Discord OAuth. Protected procedures use `protectedProcedure` from tRPC context. Session data is available in `ctx.session`.
+
+**8. RBAC System**: Complete role-based access control with:
    - Users can have multiple roles
    - Roles have multiple permissions
    - Admin UI at `/admin/*` for managing users, roles, and permissions
 
-4. **Database Access**: All database operations go through Prisma client (`ctx.db`). Schema is defined in `prisma/schema.prisma`.
+**9. Database Access**: All database operations go through Prisma client (`ctx.db`). Schema is defined in `prisma/schema.prisma`.
 
-5. **Component Architecture**: shadcn/ui components in `src/components/ui/` use Radix UI primitives with Tailwind CSS v4 styling.
+**10. Component Architecture**: shadcn/ui components in `src/components/ui/` use Radix UI primitives with Tailwind CSS v4 styling.
 
-6. **Configuration Management**: Centralized configuration pattern with consolidated tooling configs:
+**11. Configuration Management**: Centralized configuration pattern with consolidated tooling configs:
    - **Runtime Config**: All application configuration centralized in `src/config/index.ts`
    - **Environment Variables**: Validated in `src/env.js` using T3 env
    - **Tool Configs**: Consolidated in `package.json` where possible (prettier, postcss, lint-staged, prisma seed)
    - **Complex Configs**: Remain as separate files when appropriate (eslint, typescript, playwright)
+
+## Module System Architecture
+
+### Module Integration Patterns
+
+New modules integrate seamlessly using these established patterns:
+
+#### Module Registration
+```typescript
+// src/core/module-registry.ts
+class ModuleRegistry {
+  private modules = new Map<string, ModuleStrategy>()
+  private eventBus = new ModuleEventBus()
+  private container = new ModuleContainer()
+  
+  registerModule(name: string, module: ModuleStrategy): void {
+    // Validate module interfaces
+    // Register dependencies
+    // Subscribe to events
+    // Add to tRPC router
+  }
+}
+```
+
+#### Event-Driven Communication
+```typescript
+// Inter-module events (loosely coupled)
+eventBus.publish('user.created', { userId, email, roles })
+eventBus.publish('webhook.received', { endpointId, payload, headers })
+eventBus.publish('payment.succeeded', { customerId, amount, metadata })
+```
+
+#### Shared Interfaces
+```typescript
+interface ModuleConfig {
+  name: string
+  version: string
+  dependencies: string[]
+  permissions: Permission[]
+  migrations?: Migration[]
+}
+
+interface ModuleHealthCheck {
+  status: 'healthy' | 'degraded' | 'unhealthy'
+  dependencies: HealthStatus[]
+  lastCheck: Date
+}
+```
+
+### Planned Module Examples
+
+**Billing Module** (`src/modules/billing/`)
+- Stripe integration with webhook handling
+- Usage tracking and metering
+- Subscription management UI in admin dashboard
+- Integrates with RBAC for payment-based permissions
+
+**Email Module** (`src/modules/email/`)
+- Transactional email templates
+- SES/SendGrid provider abstraction
+- Email analytics and delivery tracking
+- Event-driven triggers (user.created → welcome email)
+
+**Analytics Module** (`src/modules/analytics/`)
+- Event tracking and funnels
+- Custom dashboard widgets
+- Privacy-compliant data collection
+- Integration with existing admin UI
 
 ## Configuration Consolidation Strategy
 
@@ -209,27 +356,94 @@ The project uses a centralized logging system for E2E tests with configurable ve
 
 ## Development Workflow
 
-1. **Adding New Features**:
+### Enterprise Module Development
+
+**1. Creating a New Module** (Following SOLID Principles):
+
+```bash
+# Create module structure
+mkdir -p src/modules/new-module/{components,services,types,migrations}
+
+# Implement ModuleStrategy interface
+# src/modules/new-module/index.ts
+export class NewModule implements ModuleStrategy {
+  async install(): Promise<void> { /* setup logic */ }
+  configure(config: ModuleConfig): void { /* configuration */ }
+  getRoutes(): TRPCRouter[] { /* tRPC procedures */ }
+  getMiddleware(): Middleware[] { /* request processing */ }
+  getEventHandlers(): EventHandler[] { /* event subscriptions */ }
+}
+```
+
+**2. Module Integration Checklist**:
+- ✅ Implement `ModuleStrategy` interface
+- ✅ Define clear module boundaries (Single Responsibility)
+- ✅ Use dependency injection for external dependencies
+- ✅ Subscribe to relevant events via `ModuleEventBus`
+- ✅ Add tRPC procedures to admin dashboard
+- ✅ Include database migrations if needed
+- ✅ Write comprehensive E2E tests
+- ✅ Document module API and configuration
+
+**3. Pattern Compliance**:
+```typescript
+// ❌ Bad: Direct dependencies
+import { StripeService } from '../billing/stripe-service'
+
+// ✅ Good: Dependency injection
+constructor(@Inject('PaymentService') private payments: PaymentService)
+```
+
+```typescript
+// ❌ Bad: Tight coupling
+this.userService.updateProfile(data)
+
+// ✅ Good: Event-driven
+this.eventBus.publish('profile.update.requested', data)
+```
+
+### Traditional T3 Stack Development
+
+**4. Adding T3 Features**:
    - Create tRPC router in `src/server/api/routers/`
    - Add router to `src/server/api/root.ts`
    - Create UI components using shadcn/ui components
    - Use `api.<router>.<procedure>.useQuery/useMutation()` in components
 
-2. **Database Changes**:
+**5. Database Changes**:
    - Edit `prisma/schema.prisma`
    - Run `yarn db:generate` to create migration
    - Test migration locally before committing
 
-3. **Before Committing**:
+### Microservices Development (HookRelay)
+
+**6. Service Development**:
+   - Modify `services/ingest-local/src/index.ts` for ingestion logic
+   - Modify `services/worker/src/index.ts` for delivery logic
+   - Update DynamoDB schemas in `scripts/localstack/bootstrap.sh`
+   - Test with LocalStack: `docker compose up`
+
+**7. Infrastructure Changes**:
+   - Update Terraform modules in `infra/terraform/`
+   - Plan changes: `cd infra/terraform && terraform plan`
+   - Apply changes: `terraform apply` (after review)
+
+### Quality Assurance
+
+**8. Before Committing**:
    - Run `yarn ci` to ensure all checks pass
+   - Verify SOLID principle compliance
+   - Check design pattern usage is appropriate
    - Fix any TypeScript, linting, or formatting issues
    - Ensure E2E tests pass if UI was modified
+   - Test module integration if new modules added
 
-4. **Debugging Test Issues**:
+**9. Debugging Test Issues**:
    - Use `yarn test:e2e:debug` for detailed logging
    - Use `yarn test:e2e:verbose` for maximum detail
    - Use `yarn test:e2e:ui` for interactive debugging
    - Check `test-results/` directory for traces and screenshots
+   - Check LocalStack logs: `docker compose logs localstack`
 
 ## Environment Setup
 

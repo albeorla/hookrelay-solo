@@ -1,4 +1,4 @@
-import express from "express";
+import express, { type Request, type Response } from "express";
 import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 
 const app = express();
@@ -15,9 +15,9 @@ const sqs = new SQSClient({
   credentials: sqsEndpoint ? { accessKeyId: "test", secretAccessKey: "test" } : undefined,
 });
 
-app.get("/healthz", (_req, res) => res.status(200).send("ok"));
+app.get("/healthz", (_req: Request, res: Response) => res.status(200).send("ok"));
 
-app.post("/ingest/:endpointId", async (req, res) => {
+app.post("/ingest/:endpointId", async (req: Request, res: Response) => {
   try {
     const payload = {
       endpoint_id: req.params.endpointId,
@@ -39,4 +39,3 @@ app.post("/ingest/:endpointId", async (req, res) => {
 });
 
 app.listen(port, () => console.log(`ingest-local listening on :${port}`));
-

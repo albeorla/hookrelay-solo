@@ -31,7 +31,7 @@ services:
       - AWS_REGION=us-east-1
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
-      - SQS_URL=http://localstack:4566/000000000000/hookrelay-delivery-attempts
+      - QUEUE_NAME=hookrelay-delivery-attempts
       - ENDPOINTS_TABLE=hookrelay-endpoints
       - IDEMPOTENCY_TABLE=hookrelay-idempotency
       - DELIVERIES_TABLE=hookrelay-deliveries
@@ -46,4 +46,3 @@ services:
 
 volumes:
   localstack-data:
-
