@@ -12,7 +12,7 @@ echo "Owner: $owner"
 echo "Repo:  $repo"
 
 echo "Finding or creating project: $project_title"
-proj_number=$(gh project list --owner "$owner" --format json -q ".[] | select(.title == '$project_title') | .number" | head -n1)
+proj_number=$(gh project list --owner "$owner" --format json -q ".projects[] | select(.title == \"$project_title\") | .number" | head -n1)
 if [[ -z "${proj_number:-}" ]]; then
   proj_number=$(gh project create --owner "$owner" --title "$project_title" --format json -q .number)
   echo "Created project number: $proj_number"
@@ -23,7 +23,7 @@ fi
 echo "Linking repository to project"
 gh project link "$proj_number" --owner "$owner" --repo "${repo#*/}" || true
 
-field_id() { gh project field-list "$proj_number" --owner "$owner" --format json -q ".[] | select(.name == '$1') | .id" | head -n1; }
+field_id() { gh project field-list "$proj_number" --owner "$owner" --format json -q ".fields[] | select(.name == \"$1\") | .id" | head -n1; }
 
 ensure_select_field() {
   local name="$1"; shift
@@ -46,7 +46,7 @@ ensure_select_field "Area" infra api console alerts billing testing docs
 ensure_select_field "Priority" P0 P1 P2 P3
 ensure_date_field "Target"
 
-mapfile -t titles < <(cat <<'EOF'
+titles=$(cat <<'EOF'
 Infra: Terraform scaffold + core AWS
 Ingest handler: HMAC (Stripe/GitHub/generic) + idempotency
 Delivery worker: POST to receiver + classification
@@ -63,7 +63,7 @@ EOF
 issues_json=$(gh issue list -R "$repo" --limit 200 --state open --json number,title,url)
 
 added=0
-for t in "${titles[@]}"; do
+while IFS= read -r t; do
   url=$(jq -r --arg t "$t" '.[] | select(.title == $t) | .url' <<<"$issues_json" | head -n1)
   if [[ -n "$url" && "$url" != "null" ]]; then
     gh project item-add "$proj_number" --owner "$owner" --url "$url" >/dev/null
@@ -72,8 +72,7 @@ for t in "${titles[@]}"; do
   else
     echo "Not found (skipped): $t"
   fi
-done
+done <<< "$titles"
 
 echo
 echo "Project $project_title (#$proj_number) linked and $added issues added."
-

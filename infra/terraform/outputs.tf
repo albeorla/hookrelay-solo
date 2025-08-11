@@ -5,4 +5,7 @@ output "ddb_deliveries" { value = aws_dynamodb_table.deliveries.name }
 output "ddb_idempotency" { value = aws_dynamodb_table.idempotency.name }
 output "ddb_endpoints" { value = aws_dynamodb_table.endpoints.name }
 output "ddb_replay_jobs" { value = aws_dynamodb_table.replay_jobs.name }
-
+output "ecr_ingest" { value = aws_ecr_repository.ingest.repository_url }
+output "ecr_worker" { value = aws_ecr_repository.worker.repository_url }
+output "ecs_cluster" { value = aws_ecs_cluster.this.name }
+output "alb_dns" { value = aws_lb.ingest.dns_name }

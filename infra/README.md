@@ -13,6 +13,5 @@ Outputs
 - KMS key ARN, DLQ bucket, SQS delivery attempts queue, DynamoDB table names.
 
 Next
-- Add API Gateway, Lambda roles, and EventBridge Scheduler resources per dev plan.
-- Wire Lambda handlers in `aws/handlers/*` to IAM + triggers.
-
+- Prefer containers: ECS Fargate services for `ingest` (behind ALB) and `worker` (SQS poller).
+- Build/push container images to ECR via GitHub Actions, then `terraform apply` to deploy.
