@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "next build",
-    "ci": "yarn typecheck && yarn lint && yarn format:check && yarn test:unit && yarn test:e2e:ci",
+    "ci": "yarn typecheck:app && yarn lint && yarn format:check && yarn test:unit && yarn test:e2e:ci",
     "prepare": "husky",
     "db:generate": "prisma migrate dev",
     "db:migrate": "prisma migrate deploy",

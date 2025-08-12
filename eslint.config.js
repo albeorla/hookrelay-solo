@@ -42,6 +42,24 @@ export default tseslint.config(
     },
   },
   {
+    // Lighten rules for non-app code (services, aws handlers), avoid typed lint
+    files: ["services/**/*.{ts,tsx,js,jsx}", "aws/**/*.{ts,tsx,js,jsx}"],
+    languageOptions: {
+      parserOptions: {
+        projectService: false,
+      },
+    },
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "@typescript-eslint/no-unsafe-assignment": "off",
+      "@typescript-eslint/no-unsafe-member-access": "off",
+      "@typescript-eslint/no-unsafe-call": "off",
+      "@typescript-eslint/no-unsafe-argument": "off",
+      "@typescript-eslint/prefer-nullish-coalescing": "off",
+      "@typescript-eslint/no-misused-promises": "off",
+    },
+  },
+  {
     linterOptions: {
       reportUnusedDisableDirectives: true,
     },

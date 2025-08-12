@@ -1,7 +1,7 @@
 // Guard server-only import to avoid throwing in non-Next runtimes (e.g., Jest/Playwright config)
 if (process.env.NEXT_RUNTIME) {
   try {
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
     require("server-only");
   } catch {}
 }
