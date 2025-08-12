@@ -88,3 +88,5 @@ const config = {
   // Performance
   maxWorkers: process.env.CI ? 2 : "50%",
 };
+
+export default config;

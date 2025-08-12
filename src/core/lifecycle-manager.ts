@@ -337,7 +337,7 @@ export class LifecycleManager {
   private planStartupExecution(
     modules: readonly ModuleConfig[],
     options: LifecycleOptions,
-  ): readonly (readonly string[])[] {
+  ): string[][] {
     if (options.customOrder) {
       // Use custom order, split into phases by concurrency limit
       return this.chunkArray(options.customOrder, options.maxConcurrency);
@@ -368,7 +368,7 @@ export class LifecycleManager {
   private planShutdownExecution(
     modules: readonly ModuleConfig[],
     options: LifecycleOptions,
-  ): readonly (readonly string[])[] {
+  ): string[][] {
     // Reverse of startup order
     const startupPlan = this.planStartupExecution(modules, options);
     const reversedPlan = [...startupPlan].reverse();
@@ -444,10 +444,7 @@ export class LifecycleManager {
     return modules.map((m) => m.name).sort((a, b) => a.localeCompare(b));
   }
 
-  private chunkArray<T>(
-    array: readonly T[],
-    size: number,
-  ): readonly (readonly T[])[] {
+  private chunkArray<T>(array: readonly T[], size: number): T[][] {
     const chunks: T[][] = [];
     for (let i = 0; i < array.length; i += size) {
       chunks.push(array.slice(i, i + size));

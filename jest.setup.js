@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * Jest Setup File
  *

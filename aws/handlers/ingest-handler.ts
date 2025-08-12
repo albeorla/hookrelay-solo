@@ -16,7 +16,10 @@ function hmacSha256Hex(secret: string, data: string) {
   return crypto.createHmac("sha256", secret).update(data).digest("hex");
 }
 
-function verifyGeneric(body: string, headers: Record<string, string | undefined>) {
+function verifyGeneric(
+  body: string,
+  headers: Record<string, string | undefined>,
+) {
   const ts = headers["x-timestamp"] || headers["X-Timestamp"] || "";
   const sig = headers["x-signature"] || headers["X-Signature"];
   if (!sig) return false;
@@ -34,17 +37,25 @@ function ulid() {
   return (time + rand).slice(0, 26);
 }
 
-export async function handler(event: APIGatewayProxyEventV2): Promise<APIGatewayProxyStructuredResultV2> {
-  const raw = event.body ? (event.isBase64Encoded ? Buffer.from(event.body, "base64").toString("utf8") : event.body) : "";
+export async function handler(
+  event: APIGatewayProxyEventV2,
+): Promise<APIGatewayProxyStructuredResultV2> {
+  const raw = event.body
+    ? event.isBase64Encoded
+      ? Buffer.from(event.body, "base64").toString("utf8")
+      : event.body
+    : "";
   const ok = verifyGeneric(raw, event.headers || {});
   if (!ok) {
-    return { statusCode: 401, body: JSON.stringify({ error: "invalid signature" }) };
+    return {
+      statusCode: 401,
+      body: JSON.stringify({ error: "invalid signature" }),
+    };
   }
   const deliveryId = ulid();
   return {
     statusCode: 202,
     headers: { "content-type": "application/json" },
-    body: JSON.stringify({ delivery_id: deliveryId })
+    body: JSON.stringify({ delivery_id: deliveryId }),
   };
 }
-

@@ -4,7 +4,6 @@ import React from "react";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
-import config from "~/config";
 import { Button } from "~/components/ui/button";
 import {
   Card,
@@ -61,7 +60,7 @@ export default function AuthPage() {
             Sign in with Discord
           </Button>
 
-          {config.app.nodeEnv === "development" && (
+          {process.env.NODE_ENV === "development" && (
             <div className="space-y-2">
               <Button
                 onClick={() => handleTestSignIn("admin")}

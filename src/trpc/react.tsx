@@ -7,7 +7,6 @@ import { type inferRouterInputs, type inferRouterOutputs } from "@trpc/server";
 import { useState } from "react";
 import SuperJSON from "superjson";
 
-import config from "~/config";
 import { type AppRouter } from "~/server/api/root";
 import { createQueryClient } from "./query-client";
 
@@ -47,7 +46,7 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
       links: [
         loggerLink({
           enabled: (op) =>
-            config.app.nodeEnv === "development" ||
+            process.env.NODE_ENV === "development" ||
             (op.direction === "down" && op.result instanceof Error),
         }),
         httpBatchStreamLink({
@@ -75,5 +74,6 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
 function getBaseUrl() {
   if (typeof window !== "undefined") return window.location.origin;
   if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
-  return `http://localhost:${config.app.port}`;
+  const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
+  return `http://localhost:${port}`;
 }

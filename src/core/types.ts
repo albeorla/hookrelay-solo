@@ -160,12 +160,12 @@ export interface ModuleMigration {
  * Module performance metrics
  */
 export interface ModuleMetrics {
-  readonly startupTime: number;
-  readonly memoryUsage: number;
-  readonly requestCount: number;
-  readonly errorCount: number;
-  readonly avgResponseTime: number;
-  readonly lastRequestTime?: Date;
+  startupTime: number;
+  memoryUsage: number;
+  requestCount: number;
+  errorCount: number;
+  avgResponseTime: number;
+  lastRequestTime?: Date;
 }
 
 /**

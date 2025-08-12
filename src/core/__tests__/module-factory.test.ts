@@ -195,7 +195,7 @@ describe("ModuleFactory", () => {
     it("should validate settings object", async () => {
       const invalidSettingsConfig = {
         ...testConfig,
-        settings: "not an object" as unknown,
+        settings: "not an object" as unknown as Record<string, unknown>,
       };
 
       await expect(factory.createModule(invalidSettingsConfig)).rejects.toThrow(

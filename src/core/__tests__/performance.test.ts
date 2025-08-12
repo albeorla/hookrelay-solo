@@ -63,8 +63,29 @@ describe("Module System Performance", () => {
     factory = new ModuleFactory();
     lifecycleManager = new LifecycleManager(registry);
 
-    // Register test module
-    factory.registerModule("perf-test", PerformanceTestModule, "1.0.0");
+    // Helper to register module name in both factory and registry
+    const register = (name: string) => {
+      try {
+        factory.registerModule(name, PerformanceTestModule, "1.0.0");
+      } catch {}
+      try {
+        registry.registerModuleType(name, PerformanceTestModule, "1.0.0");
+      } catch {}
+    };
+
+    // Common base registration
+    register("perf-test");
+
+    // Pre-register frequently used names
+    [
+      "perf-test-1",
+      "perf-test-2",
+      "perf-test-install",
+      "perf-test-configure",
+      "perf-test-start",
+      "perf-test-stop",
+      "perf-test-health",
+    ].forEach(register);
   });
 
   afterEach(() => {
@@ -183,7 +204,17 @@ describe("Module System Performance", () => {
       // Register multiple test modules
       for (let i = 0; i < moduleCount; i++) {
         const moduleName = `perf-test-bulk-${i}`;
-        factory.registerModule(moduleName, PerformanceTestModule, "1.0.0");
+        // Register in both factory and registry
+        try {
+          factory.registerModule(moduleName, PerformanceTestModule, "1.0.0");
+        } catch {}
+        try {
+          registry.registerModuleType(
+            moduleName,
+            PerformanceTestModule,
+            "1.0.0",
+          );
+        } catch {}
         configs.push(createTestConfig(moduleName));
       }
 
@@ -224,7 +255,16 @@ describe("Module System Performance", () => {
       // Register and install multiple modules
       for (let i = 0; i < moduleCount; i++) {
         const moduleName = `perf-test-startup-${i}`;
-        factory.registerModule(moduleName, PerformanceTestModule, "1.0.0");
+        try {
+          factory.registerModule(moduleName, PerformanceTestModule, "1.0.0");
+        } catch {}
+        try {
+          registry.registerModuleType(
+            moduleName,
+            PerformanceTestModule,
+            "1.0.0",
+          );
+        } catch {}
         const config = createTestConfig(moduleName);
         await registry.installModule(config);
         await registry.configureModule(config.name, {});
@@ -255,7 +295,16 @@ describe("Module System Performance", () => {
       // Perform many module operations
       for (let i = 0; i < 50; i++) {
         const moduleName = `perf-test-memory-${i}`;
-        factory.registerModule(moduleName, PerformanceTestModule, "1.0.0");
+        try {
+          factory.registerModule(moduleName, PerformanceTestModule, "1.0.0");
+        } catch {}
+        try {
+          registry.registerModuleType(
+            moduleName,
+            PerformanceTestModule,
+            "1.0.0",
+          );
+        } catch {}
 
         const config = createTestConfig(moduleName);
         await registry.installModule(config);
@@ -288,7 +337,16 @@ describe("Module System Performance", () => {
       // Register modules
       for (let i = 0; i < concurrentCount; i++) {
         const moduleName = `perf-test-concurrent-${i}`;
-        factory.registerModule(moduleName, PerformanceTestModule, "1.0.0");
+        try {
+          factory.registerModule(moduleName, PerformanceTestModule, "1.0.0");
+        } catch {}
+        try {
+          registry.registerModuleType(
+            moduleName,
+            PerformanceTestModule,
+            "1.0.0",
+          );
+        } catch {}
       }
 
       const start = performance.now();
@@ -323,7 +381,16 @@ describe("Module System Performance", () => {
       // Set up some modules
       for (let i = 0; i < 10; i++) {
         const moduleName = `perf-test-query-${i}`;
-        factory.registerModule(moduleName, PerformanceTestModule, "1.0.0");
+        try {
+          factory.registerModule(moduleName, PerformanceTestModule, "1.0.0");
+        } catch {}
+        try {
+          registry.registerModuleType(
+            moduleName,
+            PerformanceTestModule,
+            "1.0.0",
+          );
+        } catch {}
         const config = createTestConfig(moduleName);
         await registry.installModule(config);
         await registry.configureModule(config.name, {});

@@ -1,5 +1,15 @@
-import { SQSClient, ReceiveMessageCommand, DeleteMessageCommand, SendMessageCommand, GetQueueUrlCommand } from "@aws-sdk/client-sqs";
-import { DynamoDBClient, GetItemCommand, PutItemCommand } from "@aws-sdk/client-dynamodb";
+import {
+  SQSClient,
+  ReceiveMessageCommand,
+  DeleteMessageCommand,
+  SendMessageCommand,
+  GetQueueUrlCommand,
+} from "@aws-sdk/client-sqs";
+import {
+  DynamoDBClient,
+  GetItemCommand,
+  PutItemCommand,
+} from "@aws-sdk/client-dynamodb";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import fetch from "node-fetch";
 import crypto from "crypto";
@@ -11,11 +21,27 @@ const sqsEndpoint = process.env.AWS_SQS_ENDPOINT;
 const ddbEndpoint = process.env.AWS_DDB_ENDPOINT;
 const s3Endpoint = process.env.AWS_S3_ENDPOINT;
 
-const sharedCreds = sqsEndpoint || ddbEndpoint || s3Endpoint ? { accessKeyId: "test", secretAccessKey: "test" } : undefined;
+const sharedCreds =
+  sqsEndpoint || ddbEndpoint || s3Endpoint
+    ? { accessKeyId: "test", secretAccessKey: "test" }
+    : undefined;
 
-const sqs = new SQSClient({ region, endpoint: sqsEndpoint, credentials: sharedCreds });
-const ddb = new DynamoDBClient({ region, endpoint: ddbEndpoint, credentials: sharedCreds });
-const s3 = new S3Client({ region, endpoint: s3Endpoint, credentials: sharedCreds, forcePathStyle: !!s3Endpoint });
+const sqs = new SQSClient({
+  region,
+  endpoint: sqsEndpoint,
+  credentials: sharedCreds,
+});
+const ddb = new DynamoDBClient({
+  region,
+  endpoint: ddbEndpoint,
+  credentials: sharedCreds,
+});
+const s3 = new S3Client({
+  region,
+  endpoint: s3Endpoint,
+  credentials: sharedCreds,
+  forcePathStyle: !!s3Endpoint,
+});
 
 const endpointsTable = process.env.ENDPOINTS_TABLE!;
 const idempotencyTable = process.env.IDEMPOTENCY_TABLE!;
@@ -34,7 +60,9 @@ type InboundMsg = {
 
 function parseStripeSig(sig: string | undefined) {
   if (!sig) return undefined;
-  const parts = Object.fromEntries(sig.split(",").map((p) => p.split("=", 2) as [string, string]));
+  const parts = Object.fromEntries(
+    sig.split(",").map((p) => p.split("=", 2) as [string, string]),
+  );
   if (!parts.t || !parts.v1) return undefined;
   return { t: parts.t, v1: parts.v1 };
 }
@@ -43,7 +71,12 @@ function hmacSha256Hex(secret: string, data: string) {
   return crypto.createHmac("sha256", secret).update(data).digest("hex");
 }
 
-async function verifySignature(mode: string | undefined, secret: string | undefined, body: string, headers: Record<string, string | undefined> = {}) {
+async function verifySignature(
+  mode: string | undefined,
+  secret: string | undefined,
+  body: string,
+  headers: Record<string, string | undefined> = {},
+) {
   if (!mode || !secret) return true; // permissive for dev
   switch (mode) {
     case "stripe": {
@@ -72,18 +105,37 @@ async function verifySignature(mode: string | undefined, secret: string | undefi
   }
 }
 
-async function isIdempotent(endpointId: string, key: string | undefined, body: string) {
-  const idem = key || crypto.createHash("sha256").update(endpointId + ":" + body).digest("hex");
+async function isIdempotent(
+  endpointId: string,
+  key: string | undefined,
+  body: string,
+) {
+  const idem =
+    key ||
+    crypto
+      .createHash("sha256")
+      .update(endpointId + ":" + body)
+      .digest("hex");
   const nowSec = Math.floor(Date.now() / 1000);
   const ttl = nowSec + 7 * 24 * 3600;
-  const get = await ddb.send(new GetItemCommand({ TableName: idempotencyTable, Key: { idempotency_key: { S: idem } } }));
+  const get = await ddb.send(
+    new GetItemCommand({
+      TableName: idempotencyTable,
+      Key: { idempotency_key: { S: idem } },
+    }),
+  );
   if (get.Item) return true;
   await ddb.send(
     new PutItemCommand({
       TableName: idempotencyTable,
-      Item: { idempotency_key: { S: idem }, endpoint_id: { S: endpointId }, created_at: { N: String(nowSec) }, expires_at: { N: String(ttl) } },
+      Item: {
+        idempotency_key: { S: idem },
+        endpoint_id: { S: endpointId },
+        created_at: { N: String(nowSec) },
+        expires_at: { N: String(ttl) },
+      },
       ConditionExpression: "attribute_not_exists(idempotency_key)",
-    })
+    }),
   );
   return false;
 }
@@ -102,15 +154,19 @@ async function run() {
   for (;;) {
     // Resolve queue URL once if needed
     if (!sqsUrl) {
-      const q = await sqs.send(new GetQueueUrlCommand({ QueueName: queueName }));
+      const q = await sqs.send(
+        new GetQueueUrlCommand({ QueueName: queueName }),
+      );
       sqsUrl = q.QueueUrl;
     }
-    const res = await sqs.send(new ReceiveMessageCommand({
-      QueueUrl: sqsUrl!,
-      MaxNumberOfMessages: 5,
-      WaitTimeSeconds: 20,
-      VisibilityTimeout: 30,
-    }));
+    const res = await sqs.send(
+      new ReceiveMessageCommand({
+        QueueUrl: sqsUrl!,
+        MaxNumberOfMessages: 5,
+        WaitTimeSeconds: 20,
+        VisibilityTimeout: 30,
+      }),
+    );
     const msgs = res.Messages || [];
     for (const m of msgs) {
       try {
@@ -120,30 +176,55 @@ async function run() {
 
         // Load endpoint config
         const ep = await ddb.send(
-          new GetItemCommand({ TableName: endpointsTable, Key: { endpoint_id: { S: endpointId } } })
+          new GetItemCommand({
+            TableName: endpointsTable,
+            Key: { endpoint_id: { S: endpointId } },
+          }),
         );
         if (!ep.Item) throw new Error("endpoint not found");
         const destUrl = ep.Item.dest_url?.S as string | undefined;
         const hmacMode = ep.Item.hmac_mode?.S as string | undefined;
         const secret = ep.Item.secret?.S as string | undefined;
-        const idk = payload.headers?.idempotency_key || payload.headers?.["Idempotency-Key"]; // safety
+        const idk =
+          payload.headers?.idempotency_key ||
+          payload.headers?.["Idempotency-Key"]; // safety
 
         // Verify signature
-        const ok = await verifySignature(hmacMode, secret, payload.raw_body, payload.headers || {});
+        const ok = await verifySignature(
+          hmacMode,
+          secret,
+          payload.raw_body,
+          payload.headers || {},
+        );
         if (!ok) throw new Error("invalid signature");
 
         // Idempotency
-        const duplicate = await isIdempotent(endpointId, typeof idk === "string" ? idk : undefined, payload.raw_body);
+        const duplicate = await isIdempotent(
+          endpointId,
+          typeof idk === "string" ? idk : undefined,
+          payload.raw_body,
+        );
         if (duplicate) {
           console.log("duplicate, ack", endpointId);
         } else {
           // Deliver
           if (!destUrl) throw new Error("missing dest_url");
-          const r = await fetch(destUrl, { method: "POST", headers: { "content-type": "application/json" }, body: payload.raw_body, signal: AbortSignal.timeout(8000) });
+          const r = await fetch(destUrl, {
+            method: "POST",
+            headers: { "content-type": "application/json" },
+            body: payload.raw_body,
+            signal: AbortSignal.timeout(8000),
+          });
           if (!r.ok) throw new Error(`HTTP ${r.status}`);
         }
 
-        if (m.ReceiptHandle) await sqs.send(new DeleteMessageCommand({ QueueUrl: sqsUrl, ReceiptHandle: m.ReceiptHandle }));
+        if (m.ReceiptHandle)
+          await sqs.send(
+            new DeleteMessageCommand({
+              QueueUrl: sqsUrl,
+              ReceiptHandle: m.ReceiptHandle,
+            }),
+          );
       } catch (err) {
         console.error("process error", err);
         // Retry with backoff or DLQ to S3 after max attempts
@@ -152,14 +233,36 @@ async function run() {
         if (attempt >= maxAttempts) {
           const key = `${payload.endpoint_id || "unknown"}/${Date.now()}-${Math.random().toString(16).slice(2)}.json`;
           await s3.send(
-            new PutObjectCommand({ Bucket: dlqBucket, Key: key, Body: JSON.stringify({ payload, error: String(err) }) })
+            new PutObjectCommand({
+              Bucket: dlqBucket,
+              Key: key,
+              Body: JSON.stringify({ payload, error: String(err) }),
+            }),
           );
-          if (m.ReceiptHandle) await sqs.send(new DeleteMessageCommand({ QueueUrl: sqsUrl, ReceiptHandle: m.ReceiptHandle }));
+          if (m.ReceiptHandle)
+            await sqs.send(
+              new DeleteMessageCommand({
+                QueueUrl: sqsUrl,
+                ReceiptHandle: m.ReceiptHandle,
+              }),
+            );
         } else {
           const delay = backoff(attempt);
           payload.attempt = attempt;
-          await sqs.send(new SendMessageCommand({ QueueUrl: sqsUrl, MessageBody: JSON.stringify(payload), DelaySeconds: Math.min(delay, 900) }));
-          if (m.ReceiptHandle) await sqs.send(new DeleteMessageCommand({ QueueUrl: sqsUrl, ReceiptHandle: m.ReceiptHandle }));
+          await sqs.send(
+            new SendMessageCommand({
+              QueueUrl: sqsUrl,
+              MessageBody: JSON.stringify(payload),
+              DelaySeconds: Math.min(delay, 900),
+            }),
+          );
+          if (m.ReceiptHandle)
+            await sqs.send(
+              new DeleteMessageCommand({
+                QueueUrl: sqsUrl,
+                ReceiptHandle: m.ReceiptHandle,
+              }),
+            );
         }
       }
     }

@@ -7,19 +7,17 @@
  * concrete module implementations.
  */
 
-import type {
-  ModuleConfig,
-  ModuleInstance,
+import type { ModuleConfig, ModuleInstance } from "./types";
+import {
   ModuleDependencyError,
   ModuleConfigurationError,
   ModuleError,
 } from "./types";
-import type { ModuleStrategy } from "./module-strategy";
 
 /**
  * Module constructor interface for factory instantiation
  */
-export type ModuleConstructor = new (config: ModuleConfig) => ModuleStrategy;
+export type ModuleConstructor = new (config: ModuleConfig) => ModuleInstance;
 
 /**
  * Module factory registration entry
@@ -136,6 +134,9 @@ export class ModuleFactory {
     // Validate configuration
     this.validateConfig(config);
 
+    // Resolve dependencies first so dependency errors take precedence
+    await this.resolveDependencies(config);
+
     // Check if module is registered
     const factoryEntry = this.registeredModules.get(config.name);
     if (!factoryEntry) {
@@ -148,9 +149,6 @@ export class ModuleFactory {
 
     // Validate version compatibility
     this.validateVersion(config, factoryEntry);
-
-    // Resolve dependencies
-    await this.resolveDependencies(config);
 
     // Create instance
     const instance = new factoryEntry.constructor(config);

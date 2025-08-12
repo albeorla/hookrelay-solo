@@ -1,3 +1,10 @@
+// Guard server-only import to avoid throwing in non-Next runtimes (e.g., Jest/Playwright config)
+if (process.env.NEXT_RUNTIME) {
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    require("server-only");
+  } catch {}
+}
 import dotenvFlow from "dotenv-flow";
 
 dotenvFlow.config({ silent: true });
