@@ -4,14 +4,31 @@ import { permissionRouter } from "~/server/api/routers/permission";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
 /**
- * This is the primary router for your server.
- *
- * All routers added in /api/routers should be manually added here.
+ * Static routers - manually added routers from /api/routers
  */
-export const appRouter = createTRPCRouter({
+const staticRouters = {
   user: userRouter,
   role: roleRouter,
   permission: permissionRouter,
+};
+
+/**
+ * Create module integration for dynamic router loading
+ */
+// const moduleIntegration = createModuleTRPCIntegration();
+
+/**
+ * This is the primary router for your server.
+ *
+ * It combines:
+ * 1. Static routers (manually added in /api/routers)
+ * 2. Dynamic module routers (automatically loaded from running modules)
+ */
+export const appRouter = createTRPCRouter({
+  ...staticRouters,
+  // Module routers will be available under the 'modules' namespace
+  // Example: trpc.modules.billing.createSubscription.mutate()
+  modules: createTRPCRouter({}), // Empty initially, populated by module system
 });
 
 // export type definition of API

@@ -35,6 +35,21 @@ export const test = {
   logLevel: (process.env.LOG_LEVEL ?? "INFO").toUpperCase(),
 };
 
-export const config = { app, auth, database, ci, test };
+export const modules = {
+  enabled: process.env.MODULES_ENABLED !== "false", // Enable by default
+  healthCheckInterval: parseInt(
+    process.env.MODULE_HEALTH_CHECK_INTERVAL ?? "60000",
+    10,
+  ), // 1 minute
+  operationTimeout: parseInt(
+    process.env.MODULE_OPERATION_TIMEOUT ?? "30000",
+    10,
+  ), // 30 seconds
+  enableMetrics: process.env.MODULE_METRICS_ENABLED !== "false", // Enable by default
+  maxConcurrency: parseInt(process.env.MODULE_MAX_CONCURRENCY ?? "5", 10),
+  rollbackOnFailure: process.env.MODULE_ROLLBACK_ON_FAILURE !== "false", // Enable by default
+};
+
+export const config = { app, auth, database, ci, test, modules };
 export default config;
 export type AppConfig = typeof config;
