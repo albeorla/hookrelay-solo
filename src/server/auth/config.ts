@@ -155,29 +155,9 @@ export const authConfig = {
   ],
   adapter: PrismaAdapter(db),
   callbacks: {
-    async signIn({ user, account }) {
-      // For OAuth providers (Discord, etc.), ensure user has at least the USER role
-      if (account?.provider !== "test-credentials" && user.id) {
-        const existingRoles = await db.userRole.findMany({
-          where: { userId: user.id },
-        });
-
-        // If user has no roles, assign the default USER role
-        if (existingRoles.length === 0) {
-          const defaultRole = await db.role.findFirst({
-            where: { name: "USER" },
-          });
-
-          if (defaultRole) {
-            await db.userRole.create({
-              data: {
-                userId: user.id,
-                roleId: defaultRole.id,
-              },
-            });
-          }
-        }
-      }
+    async signIn({ user: _user, account: _account }) {
+      // For OAuth providers (Discord, etc.), we'll handle role assignment in the session callback
+      // after the user is properly created in the database
       return true;
     },
     session: async ({ session, user }) => {
@@ -186,10 +166,38 @@ export const authConfig = {
         console.log(`🔍 Session callback for user: ${user.id} (${user.email})`);
       }
 
-      const userRoles = await db.userRole.findMany({
+      // Ensure user has at least the USER role (for OAuth providers)
+      let userRoles = await db.userRole.findMany({
         where: { userId: user.id },
         include: { role: true },
       });
+
+      // If user has no roles, assign the default USER role
+      if (userRoles.length === 0) {
+        const defaultRole = await db.role.findFirst({
+          where: { name: "USER" },
+        });
+
+        if (defaultRole) {
+          try {
+            await db.userRole.create({
+              data: {
+                userId: user.id,
+                roleId: defaultRole.id,
+              },
+            });
+
+            // Refetch roles after assignment
+            userRoles = await db.userRole.findMany({
+              where: { userId: user.id },
+              include: { role: true },
+            });
+          } catch (error) {
+            // If role assignment fails (e.g., duplicate), just continue with empty roles
+            console.warn("Failed to assign default role:", error);
+          }
+        }
+      }
 
       const roles = userRoles.map((ur) => ur.role.name);
 
