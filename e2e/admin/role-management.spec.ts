@@ -31,7 +31,7 @@ test.describe("Role Management", () => {
         page.getByRole("heading", { name: "Role Management" }),
       ).toBeVisible();
       await expect(
-        page.getByText("Manage roles and their permissions"),
+        page.getByText("Manage system roles and their permission assignments"),
       ).toBeVisible();
 
       // Verify create role button
