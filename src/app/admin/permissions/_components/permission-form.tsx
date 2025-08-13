@@ -18,9 +18,16 @@ import {
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import { api } from "~/trpc/react";
+import { Loader2 } from "lucide-react";
 
 const permissionSchema = z.object({
-  name: z.string().min(1, "Permission name is required"),
+  name: z
+    .string()
+    .min(1, "Permission name is required")
+    .regex(
+      /^[a-z]+:[a-z_]+$/,
+      'Invalid format. Use "resource:action" (e.g., "user:create").',
+    ),
   description: z.string().optional(),
 });
 
@@ -51,9 +58,6 @@ export function PermissionForm({ permission, onSuccess }: PermissionFormProps) {
       toast.success("Permission created successfully");
       onSuccess();
     },
-    onError: (error) => {
-      toast.error(`Failed to create permission: ${error.message}`);
-    },
   });
 
   const updatePermission = api.permission.update.useMutation({
@@ -61,45 +65,39 @@ export function PermissionForm({ permission, onSuccess }: PermissionFormProps) {
       toast.success("Permission updated successfully");
       onSuccess();
     },
-    onError: (error) => {
-      toast.error(`Failed to update permission: ${error.message}`);
-    },
   });
 
-  // Initialize form with permission data if editing
   useEffect(() => {
     if (permission) {
       form.reset({
         name: permission.name,
         description: permission.description ?? "",
       });
+    } else {
+      form.reset({ name: "", description: "" });
     }
   }, [permission, form]);
 
   const onSubmit = async (data: PermissionFormData) => {
     try {
       if (permission) {
-        // Update existing permission
         await updatePermission.mutateAsync({
           id: permission.id,
-          name: data.name,
-          description: data.description,
+          ...data,
         });
       } else {
-        // Create new permission
-        await createPermission.mutateAsync({
-          name: data.name,
-          description: data.description,
-        });
+        await createPermission.mutateAsync(data);
       }
-    } catch (error) {
-      console.error("Error saving permission:", error);
+    } catch {
+      // Errors are handled by the mutation's onError callback
     }
   };
 
+  const isSubmitting = createPermission.isPending || updatePermission.isPending;
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="name"
@@ -108,13 +106,14 @@ export function PermissionForm({ permission, onSuccess }: PermissionFormProps) {
               <FormLabel>Permission Name</FormLabel>
               <FormControl>
                 <Input
-                  placeholder="Enter permission name (e.g., user:create)"
+                  placeholder="e.g., user:create"
                   {...field}
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormDescription>
-                A unique name for this permission using the format
-                &quot;resource:action&quot;
+                Use the format &quot;resource:action&quot; (e.g.,
+                &quot;user:create&quot;, &quot;post:delete&quot;).
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -130,32 +129,31 @@ export function PermissionForm({ permission, onSuccess }: PermissionFormProps) {
               <FormControl>
                 <Textarea
                   placeholder="Describe what this permission allows"
-                  className="min-h-[80px]"
+                  className="min-h-[100px]"
                   {...field}
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormDescription>
-                Optional description of what this permission enables
+                A brief, clear description of the permission.
               </FormDescription>
               <FormMessage />
             </FormItem>
           )}
         />
 
-        <div className="flex justify-end gap-3 border-t pt-4">
+        <div className="flex justify-end gap-4 pt-4">
           <Button
             type="button"
             variant="outline"
             onClick={onSuccess}
-            disabled={createPermission.isPending || updatePermission.isPending}
+            disabled={isSubmitting}
           >
             Cancel
           </Button>
-          <Button
-            type="submit"
-            disabled={createPermission.isPending || updatePermission.isPending}
-          >
-            {createPermission.isPending || updatePermission.isPending
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSubmitting
               ? "Saving..."
               : permission
                 ? "Update Permission"

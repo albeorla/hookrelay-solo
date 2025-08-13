@@ -3,19 +3,12 @@
 import { useState, useEffect } from "react";
 import { Button } from "~/components/ui/button";
 import { Checkbox } from "~/components/ui/checkbox";
-import { Badge } from "~/components/ui/badge";
+import { Input } from "~/components/ui/input";
+import { api, type RouterOutputs } from "~/trpc/react";
+import { toast } from "sonner";
+import { Loader2 } from "lucide-react";
 
-interface User {
-  id: string;
-  name?: string | null;
-  email?: string | null;
-  roles: Array<{
-    role: {
-      id: string;
-      name: string;
-    };
-  }>;
-}
+type User = RouterOutputs["user"]["getAll"][number];
 
 interface Role {
   id: string;
@@ -24,82 +17,101 @@ interface Role {
 }
 
 interface UserRoleFormProps {
-  user?: User | null;
+  user: User;
   roles: Role[];
-  onSuccess: (roleIds: string[]) => void;
+  onSuccess: () => void;
 }
 
 export function UserRoleForm({ user, roles, onSuccess }: UserRoleFormProps) {
   const [selectedRoles, setSelectedRoles] = useState<string[]>([]);
+  const [searchTerm, setSearchTerm] = useState("");
 
-  // Initialize with user's current roles
+  // Use a single mutation that sets the full set of roles
+  const setUserRoles = api.user.setUserRoles.useMutation();
+
   useEffect(() => {
-    if (user) {
-      setSelectedRoles(user.roles.map((ur) => ur.role.id));
-    }
+    setSelectedRoles(user.roles.map((ur) => ur.role.id));
   }, [user]);
 
-  const handleRoleToggle = (roleId: string) => {
-    setSelectedRoles((prev) =>
-      prev.includes(roleId)
-        ? prev.filter((id) => id !== roleId)
-        : [...prev, roleId],
-    );
-  };
+  const handleSubmit = async () => {
+    try {
+      // Convert selected role IDs to role names expected by the API
+      const roleNames = roles
+        .filter((r) => selectedRoles.includes(r.id))
+        .map((r) => r.name);
 
-  const handleSubmit = () => {
-    onSuccess(selectedRoles);
-  };
-
-  const handleCancel = () => {
-    // Reset to original roles
-    if (user) {
-      setSelectedRoles(user.roles.map((ur) => ur.role.id));
+      await setUserRoles.mutateAsync({
+        userId: user.id,
+        roleNames,
+      });
+      toast.success("User roles updated successfully");
+      onSuccess();
+    } catch (error) {
+      toast.error("Failed to update roles. Please try again.");
+      console.error("Error updating roles:", error);
     }
-    onSuccess([]); // This will close the dialog
   };
+
+  const filteredRoles = roles.filter((role) =>
+    role.name.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
+
+  const isSubmitting = setUserRoles.isPending;
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h4 className="mb-3 text-sm font-medium">Available Roles</h4>
-        <div className="max-h-[300px] space-y-3 overflow-y-auto rounded-md border p-3">
-          {roles.map((role) => (
-            <div key={role.id} className="flex items-center space-x-3">
-              <Checkbox
-                id={role.id}
-                checked={selectedRoles.includes(role.id)}
-                onCheckedChange={() => handleRoleToggle(role.id)}
-              />
-              <label
-                htmlFor={role.id}
-                className="flex-1 text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
-              >
-                <div className="flex items-center gap-2">
-                  <span className="font-semibold">{role.name}</span>
-                  {role.description && (
-                    <Badge variant="secondary" className="text-xs">
-                      {role.description}
-                    </Badge>
-                  )}
-                </div>
-              </label>
-            </div>
-          ))}
-          {roles.length === 0 && (
-            <p className="text-muted-foreground text-sm">
-              No roles available. Create roles first.
-            </p>
-          )}
-        </div>
+    <div className="space-y-6">
+      <Input
+        placeholder="Search roles..."
+        value={searchTerm}
+        onChange={(e) => setSearchTerm(e.target.value)}
+      />
+      <div className="max-h-[300px] space-y-3 overflow-y-auto rounded-md border p-4">
+        {filteredRoles.map((role) => (
+          <div key={role.id} className="flex items-center space-x-3">
+            <Checkbox
+              id={role.id}
+              checked={selectedRoles.includes(role.id)}
+              onCheckedChange={() =>
+                setSelectedRoles((prev) =>
+                  prev.includes(role.id)
+                    ? prev.filter((id) => id !== role.id)
+                    : [...prev, role.id],
+                )
+              }
+              disabled={isSubmitting}
+            />
+            <label
+              htmlFor={role.id}
+              className="flex-1 cursor-pointer text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+            >
+              <p>{role.name}</p>
+              {role.description && (
+                <p className="text-muted-foreground text-xs">
+                  {role.description}
+                </p>
+              )}
+            </label>
+          </div>
+        ))}
+        {filteredRoles.length === 0 && (
+          <p className="text-muted-foreground text-center text-sm">
+            No roles found.
+          </p>
+        )}
       </div>
 
-      <div className="flex justify-end gap-3 border-t pt-4">
-        <Button type="button" variant="outline" onClick={handleCancel}>
+      <div className="flex justify-end gap-4 pt-4">
+        <Button
+          type="button"
+          variant="outline"
+          onClick={onSuccess}
+          disabled={isSubmitting}
+        >
           Cancel
         </Button>
-        <Button type="button" onClick={handleSubmit}>
-          Save Changes
+        <Button type="button" onClick={handleSubmit} disabled={isSubmitting}>
+          {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          {isSubmitting ? "Saving..." : "Save Changes"}
         </Button>
       </div>
     </div>

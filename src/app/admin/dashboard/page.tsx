@@ -1,363 +1,263 @@
 "use client";
 
 import React from "react";
-import { DefaultPageLayout } from "@/ui/layouts/DefaultPageLayout";
-import { Button } from "@/ui/components/Button";
-import { FeatherCalendarCheck } from "@subframe/core";
-import { IconWithBackground } from "@/ui/components/IconWithBackground";
-import { FeatherReceipt } from "@subframe/core";
-import { FeatherUploadCloud } from "@subframe/core";
-import { FeatherCreditCard } from "@subframe/core";
-import { FeatherCheckCheck } from "@subframe/core";
-import { FeatherCalendar } from "@subframe/core";
-import { FeatherUsers } from "@subframe/core";
-import { FeatherAlarmClock } from "@subframe/core";
-import { FeatherWrench } from "@subframe/core";
-import { FeatherPieChart } from "@subframe/core";
-import { FeatherBrush } from "@subframe/core";
-import { Avatar } from "@/ui/components/Avatar";
+import { Button } from "~/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
+import { Separator } from "~/components/ui/separator";
+import {
+  CalendarCheck,
+  Receipt,
+  UploadCloud,
+  CreditCard,
+  CheckCheck,
+  Calendar,
+  Users,
+  AlarmClock,
+  Wrench,
+  PieChart,
+  Brush,
+} from "lucide-react";
+import { AuthenticatedLayout } from "~/components/layout/authenticated-layout";
 
-function DashboardWithTiles() {
+function DashboardPage() {
+  const getTodayDate = () => {
+    return new Date().toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  };
+
   return (
-    <DefaultPageLayout>
-      <div className="bg-default-background container flex h-full w-full max-w-none flex-col items-start gap-6 py-12">
-        <div className="flex w-full flex-col items-start gap-1">
-          <span className="text-heading-2 font-heading-2 text-default-font w-full">
-            Dashboard
-          </span>
-          <span className="text-body-bold font-body-bold text-subtext-color w-full">
-            Monday, January 4
-          </span>
+    <AuthenticatedLayout>
+      <div className="container mx-auto h-full w-full py-12">
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">{getTodayDate()}</p>
         </div>
-        <div className="flex w-full flex-wrap items-start gap-4">
-          <div className="flex shrink-0 grow basis-0 flex-col items-start gap-4">
-            <div className="border-neutral-border bg-default-background flex w-full flex-col items-start rounded-md border border-solid shadow-sm">
-              <div className="flex w-full flex-col items-start gap-2 py-4 pr-3 pl-6">
-                <div className="flex w-full items-center gap-2">
-                  <span className="text-heading-3 font-heading-3 text-default-font shrink-0 grow basis-0">
-                    To-do
-                  </span>
-                  <Button
-                    variant="brand-tertiary"
-                    onClick={(_event: React.MouseEvent<HTMLButtonElement>) => {
-                      // No-op
-                    }}
-                  >
-                    View all
-                  </Button>
-                </div>
-              </div>
-              <div className="bg-neutral-border flex h-px w-full flex-none flex-col items-center gap-2" />
-              <div className="flex w-full flex-col items-start px-2 py-2">
-                <div className="flex w-full items-center gap-4 px-4 py-4">
-                  <IconWithBackground
-                    size="medium"
-                    icon={<FeatherCalendarCheck />}
-                  />
-                  <div className="flex shrink-0 grow basis-0 flex-col items-start gap-1">
-                    <span className="text-body-bold font-body-bold text-default-font w-full">
-                      Review requests
-                    </span>
-                    <span className="text-caption font-caption text-subtext-color w-full">
-                      Approve new requests in your inbox
-                    </span>
-                  </div>
-                  <span className="text-body font-body text-subtext-color">
-                    Today
-                  </span>
-                </div>
-                <div className="flex w-full items-center gap-4 px-4 py-4">
-                  <IconWithBackground size="medium" icon={<FeatherReceipt />} />
-                  <div className="flex shrink-0 grow basis-0 flex-col items-start gap-1">
-                    <span className="text-body-bold font-body-bold text-default-font w-full">
-                      Process invoices
-                    </span>
-                    <span className="text-caption font-caption text-subtext-color w-full">
-                      You have 1 to review
-                    </span>
-                  </div>
-                  <span className="text-body font-body text-subtext-color">
-                    Today
-                  </span>
-                </div>
-                <div className="flex w-full items-center gap-4 px-4 py-4">
-                  <IconWithBackground
-                    size="medium"
-                    icon={<FeatherUploadCloud />}
-                  />
-                  <div className="flex shrink-0 grow basis-0 flex-col items-start gap-1">
-                    <span className="text-body-bold font-body-bold text-default-font w-full">
-                      Upload additional documents{" "}
-                    </span>
-                    <span className="text-caption font-caption text-subtext-color w-full">
-                      We need a few more details
-                    </span>
-                  </div>
-                  <span className="text-body font-body text-subtext-color">
-                    Today
-                  </span>
-                </div>
-                <div className="flex w-full items-center gap-4 px-4 py-4">
-                  <IconWithBackground
-                    size="medium"
-                    icon={<FeatherCreditCard />}
-                  />
-                  <div className="flex shrink-0 grow basis-0 flex-col items-start gap-1">
-                    <span className="text-body-bold font-body-bold text-default-font w-full">
-                      Set up a payment method
-                    </span>
-                    <span className="text-caption font-caption text-subtext-color w-full">
-                      Avoid delaying invoices and payments
-                    </span>
-                  </div>
-                  <span className="text-body font-body text-subtext-color">
-                    Yesterday
-                  </span>
-                </div>
-                <div className="flex w-full items-center gap-4 px-4 py-4">
-                  <IconWithBackground
-                    size="medium"
-                    icon={<FeatherCheckCheck />}
-                  />
-                  <div className="flex shrink-0 grow basis-0 flex-col items-start gap-1">
-                    <span className="text-body-bold font-body-bold text-default-font w-full">
-                      Finish verification
-                    </span>
-                    <span className="text-caption font-caption text-subtext-color w-full">
-                      Verify your account securely
-                    </span>
-                  </div>
-                  <span className="text-body font-body text-subtext-color">
-                    Yesterday
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="border-neutral-border bg-default-background flex w-full flex-col items-start rounded-md border border-solid shadow-sm">
-              <div className="flex w-full items-center gap-2 py-4 pr-4 pl-6">
-                <span className="text-heading-3 font-heading-3 text-default-font shrink-0 grow basis-0">
-                  Upcoming events
-                </span>
-                <Button
-                  variant="brand-tertiary"
-                  onClick={(_event: React.MouseEvent<HTMLButtonElement>) => {
-                    // No-op
-                  }}
-                >
-                  View all
-                </Button>
-              </div>
-              <div className="bg-neutral-border flex h-px w-full flex-none flex-col items-center gap-2" />
-              <div className="flex w-full flex-col items-start px-2 py-2">
-                <div className="flex w-full items-center gap-4 px-4 py-4">
-                  <IconWithBackground
-                    variant="error"
-                    size="medium"
-                    icon={<FeatherCalendar />}
-                  />
-                  <div className="flex shrink-0 grow basis-0 flex-col items-start gap-1">
-                    <span className="text-body-bold font-body-bold text-default-font w-full">
-                      Department Offsite
-                    </span>
-                    <span className="text-caption font-caption text-subtext-color w-full">
-                      Monday, Nov 13, 2023
-                    </span>
-                  </div>
-                  <span className="text-body font-body text-subtext-color">
-                    All-day
-                  </span>
-                </div>
-                <div className="flex w-full items-center gap-4 px-4 py-4">
-                  <IconWithBackground
-                    variant="error"
-                    size="medium"
-                    icon={<FeatherCalendar />}
-                  />
-                  <div className="flex shrink-0 grow basis-0 flex-col items-start gap-1">
-                    <span className="text-body-bold font-body-bold text-default-font w-full">
-                      Quarterly Review
-                    </span>
-                    <span className="text-caption font-caption text-subtext-color w-full">
-                      Tuesday, Nov 3, 2023
-                    </span>
-                  </div>
-                  <span className="text-body font-body text-subtext-color">
-                    9:00 AM
-                  </span>
-                </div>
-                <div className="flex w-full items-center gap-4 px-4 py-4">
-                  <IconWithBackground
-                    variant="error"
-                    size="medium"
-                    icon={<FeatherCalendar />}
-                  />
-                  <div className="flex shrink-0 grow basis-0 flex-col items-start gap-1">
-                    <span className="text-body-bold font-body-bold text-default-font w-full">
-                      Project kick-off
-                    </span>
-                    <span className="text-caption font-caption text-subtext-color w-full">
-                      Monday, Nov 13, 2023
-                    </span>
-                  </div>
-                  <span className="text-body font-body text-subtext-color">
-                    3:00 PM
-                  </span>
-                </div>
-              </div>
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <div className="space-y-6">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>To-do</CardTitle>
+                  <Button variant="link">View all</Button>
+                </CardHeader>
+                <Separator />
+                <CardContent className="pt-6">
+                  <ul className="space-y-4">
+                    <li className="flex items-center gap-4">
+                      <CalendarCheck className="text-primary h-6 w-6" />
+                      <div className="flex-grow">
+                        <p className="font-semibold">Review requests</p>
+                        <p className="text-muted-foreground text-sm">
+                          Approve new requests in your inbox
+                        </p>
+                      </div>
+                      <span className="text-muted-foreground text-sm">
+                        Today
+                      </span>
+                    </li>
+                    <li className="flex items-center gap-4">
+                      <Receipt className="text-primary h-6 w-6" />
+                      <div className="flex-grow">
+                        <p className="font-semibold">Process invoices</p>
+                        <p className="text-muted-foreground text-sm">
+                          You have 1 to review
+                        </p>
+                      </div>
+                      <span className="text-muted-foreground text-sm">
+                        Today
+                      </span>
+                    </li>
+                    <li className="flex items-center gap-4">
+                      <UploadCloud className="text-primary h-6 w-6" />
+                      <div className="flex-grow">
+                        <p className="font-semibold">
+                          Upload additional documents
+                        </p>
+                        <p className="text-muted-foreground text-sm">
+                          We need a few more details
+                        </p>
+                      </div>
+                      <span className="text-muted-foreground text-sm">
+                        Today
+                      </span>
+                    </li>
+                    <li className="flex items-center gap-4">
+                      <CreditCard className="text-primary h-6 w-6" />
+                      <div className="flex-grow">
+                        <p className="font-semibold">Set up a payment method</p>
+                        <p className="text-muted-foreground text-sm">
+                          Avoid delaying invoices and payments
+                        </p>
+                      </div>
+                      <span className="text-muted-foreground text-sm">
+                        Yesterday
+                      </span>
+                    </li>
+                    <li className="flex items-center gap-4">
+                      <CheckCheck className="text-primary h-6 w-6" />
+                      <div className="flex-grow">
+                        <p className="font-semibold">Finish verification</p>
+                        <p className="text-muted-foreground text-sm">
+                          Verify your account securely
+                        </p>
+                      </div>
+                      <span className="text-muted-foreground text-sm">
+                        Yesterday
+                      </span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between">
+                  <CardTitle>Upcoming events</CardTitle>
+                  <Button variant="link">View all</Button>
+                </CardHeader>
+                <Separator />
+                <CardContent className="pt-6">
+                  <ul className="space-y-4">
+                    <li className="flex items-center gap-4">
+                      <Calendar className="text-destructive h-6 w-6" />
+                      <div className="flex-grow">
+                        <p className="font-semibold">Department Offsite</p>
+                        <p className="text-muted-foreground text-sm">
+                          Monday, Nov 13, 2023
+                        </p>
+                      </div>
+                      <span className="text-muted-foreground text-sm">
+                        All-day
+                      </span>
+                    </li>
+                    <li className="flex items-center gap-4">
+                      <Calendar className="text-destructive h-6 w-6" />
+                      <div className="flex-grow">
+                        <p className="font-semibold">Quarterly Review</p>
+                        <p className="text-muted-foreground text-sm">
+                          Tuesday, Nov 3, 2023
+                        </p>
+                      </div>
+                      <span className="text-muted-foreground text-sm">
+                        9:00 AM
+                      </span>
+                    </li>
+                    <li className="flex items-center gap-4">
+                      <Calendar className="text-destructive h-6 w-6" />
+                      <div className="flex-grow">
+                        <p className="font-semibold">Project kick-off</p>
+                        <p className="text-muted-foreground text-sm">
+                          Monday, Nov 13, 2023
+                        </p>
+                      </div>
+                      <span className="text-muted-foreground text-sm">
+                        3:00 PM
+                      </span>
+                    </li>
+                  </ul>
+                </CardContent>
+              </Card>
             </div>
           </div>
-          <div className="flex max-w-[448px] shrink-0 grow basis-0 flex-col items-start gap-4">
-            <div className="border-neutral-border bg-default-background flex w-full flex-col items-start rounded-md border border-solid shadow-sm">
-              <div className="flex w-full items-center gap-2 py-4 pr-3 pl-6">
-                <span className="text-heading-3 font-heading-3 text-default-font line-clamp-1 shrink-0 grow basis-0">
-                  Updates
-                </span>
-                <Button
-                  variant="brand-tertiary"
-                  onClick={(_event: React.MouseEvent<HTMLButtonElement>) => {
-                    // No-op
-                  }}
-                >
-                  View all
-                </Button>
-              </div>
-              <div className="bg-neutral-border flex h-px w-full flex-none flex-col items-center gap-2" />
-              <div className="flex w-full flex-col items-start gap-4 px-4 py-4">
-                <div className="bg-brand-50 flex w-full items-center gap-4 rounded-md px-4 py-4">
-                  <div className="flex h-8 w-8 flex-none items-center justify-center">
-                    <FeatherUsers className="text-heading-3 font-heading-3 text-brand-700" />
-                  </div>
-                  <div className="flex shrink-0 grow basis-0 flex-col items-start gap-1">
-                    <span className="text-body-bold font-body-bold text-default-font w-full">
-                      5 new members
-                    </span>
-                    <span className="text-caption font-caption text-subtext-color shrink-0 grow basis-0">
+          <div className="space-y-6">
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Updates</CardTitle>
+                <Button variant="link">View all</Button>
+              </CardHeader>
+              <Separator />
+              <CardContent className="space-y-4 pt-6">
+                <div className="flex items-center gap-4 rounded-lg bg-blue-50 p-4 dark:bg-blue-900/20">
+                  <Users className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  <div>
+                    <p className="font-semibold">5 new members</p>
+                    <p className="text-muted-foreground text-sm">
                       1 onboarding now
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-4 rounded-lg bg-red-50 p-4 dark:bg-red-900/20">
+                  <AlarmClock className="h-6 w-6 text-red-600 dark:text-red-400" />
+                  <div>
+                    <p className="font-semibold">3 reminders</p>
+                    <p className="text-muted-foreground text-sm">2 overdue</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Departments</CardTitle>
+                <Button variant="link">View all</Button>
+              </CardHeader>
+              <Separator />
+              <CardContent className="pt-6">
+                <ul className="space-y-4">
+                  <li className="flex items-center gap-4">
+                    <Wrench className="text-muted-foreground h-6 w-6" />
+                    <p className="flex-grow font-semibold">Engineering</p>
+                    <span className="text-muted-foreground">12</span>
+                  </li>
+                  <li className="flex items-center gap-4">
+                    <PieChart className="text-muted-foreground h-6 w-6" />
+                    <p className="flex-grow font-semibold">Product</p>
+                    <span className="text-muted-foreground">5</span>
+                  </li>
+                  <li className="flex items-center gap-4">
+                    <Brush className="text-muted-foreground h-6 w-6" />
+                    <p className="flex-grow font-semibold">Design</p>
+                    <span className="text-muted-foreground">3</span>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Recently joined</CardTitle>
+                <Button variant="link">View all</Button>
+              </CardHeader>
+              <Separator />
+              <CardContent className="pt-6">
+                <ul className="space-y-4">
+                  <li className="flex items-center gap-4">
+                    <Avatar>
+                      <AvatarImage src="https://res.cloudinary.com/subframe/image/upload/v1711417507/shared/fychrij7dzl8wgq2zjq9.avif" />
+                      <AvatarFallback>A</AvatarFallback>
+                    </Avatar>
+                    <p className="flex-grow font-semibold">Abigail</p>
+                    <span className="text-muted-foreground text-sm">
+                      Oct 24
                     </span>
-                  </div>
-                </div>
-                <div className="bg-error-100 flex w-full items-center gap-4 rounded-md px-4 py-4">
-                  <div className="flex h-8 w-8 flex-none items-center justify-center">
-                    <FeatherAlarmClock className="text-heading-3 font-heading-3 text-error-700" />
-                  </div>
-                  <div className="flex shrink-0 grow basis-0 flex-col items-start gap-1">
-                    <span className="text-body-bold font-body-bold text-default-font w-full">
-                      3 reminders
+                  </li>
+                  <li className="flex items-center gap-4">
+                    <Avatar>
+                      <AvatarImage src="https://res.cloudinary.com/subframe/image/upload/v1711417514/shared/ubsk7cs5hnnaj798efej.jpg" />
+                      <AvatarFallback>J</AvatarFallback>
+                    </Avatar>
+                    <p className="flex-grow font-semibold">Jonah</p>
+                    <span className="text-muted-foreground text-sm">Nov 5</span>
+                  </li>
+                  <li className="flex items-center gap-4">
+                    <Avatar>
+                      <AvatarImage src="https://res.cloudinary.com/subframe/image/upload/v1711417513/shared/kwut7rhuyivweg8tmyzl.jpg" />
+                      <AvatarFallback>M</AvatarFallback>
+                    </Avatar>
+                    <p className="flex-grow font-semibold">Michael</p>
+                    <span className="text-muted-foreground text-sm">
+                      Nov 23
                     </span>
-                    <span className="text-caption font-caption text-subtext-color shrink-0 grow basis-0">
-                      2 overdue
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="border-neutral-border bg-default-background flex w-full flex-col items-start rounded-md border border-solid shadow-sm">
-              <div className="flex w-full items-start gap-2 py-4 pr-3 pl-6">
-                <span className="text-heading-3 font-heading-3 text-default-font line-clamp-1 shrink-0 grow basis-0">
-                  Departments
-                </span>
-                <Button
-                  variant="brand-tertiary"
-                  onClick={(_event: React.MouseEvent<HTMLButtonElement>) => {
-                    // No-op
-                  }}
-                >
-                  View all
-                </Button>
-              </div>
-              <div className="bg-neutral-border flex h-px w-full flex-none flex-col items-center gap-2" />
-              <div className="flex w-full flex-col items-start px-4 py-4">
-                <div className="flex w-full items-center gap-4 rounded-md px-2 py-2">
-                  <div className="flex h-8 w-8 flex-none items-center justify-center">
-                    <FeatherWrench className="text-heading-3 font-heading-3 text-default-font" />
-                  </div>
-                  <span className="text-body-bold font-body-bold text-default-font shrink-0 grow basis-0">
-                    Engineering
-                  </span>
-                  <span className="text-body font-body text-subtext-color">
-                    12
-                  </span>
-                </div>
-                <div className="flex w-full items-center gap-4 rounded-md px-2 py-2">
-                  <div className="flex h-8 w-8 flex-none items-center justify-center">
-                    <FeatherPieChart className="text-heading-3 font-heading-3 text-default-font" />
-                  </div>
-                  <span className="text-body-bold font-body-bold text-default-font shrink-0 grow basis-0">
-                    Product
-                  </span>
-                  <span className="text-body font-body text-subtext-color">
-                    5
-                  </span>
-                </div>
-                <div className="flex w-full items-center gap-4 rounded-md px-2 py-2">
-                  <div className="flex h-8 w-8 flex-none items-center justify-center">
-                    <FeatherBrush className="text-heading-3 font-heading-3 text-default-font" />
-                  </div>
-                  <span className="text-body-bold font-body-bold text-default-font shrink-0 grow basis-0">
-                    Design
-                  </span>
-                  <span className="text-body font-body text-subtext-color">
-                    3
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="border-neutral-border bg-default-background flex w-full flex-col items-start rounded-md border border-solid shadow-sm">
-              <div className="flex w-full items-center gap-2 py-4 pr-3 pl-6">
-                <span className="text-heading-3 font-heading-3 text-default-font line-clamp-1 shrink-0 grow basis-0">
-                  Recently joined
-                </span>
-                <Button
-                  variant="brand-tertiary"
-                  onClick={(_event: React.MouseEvent<HTMLButtonElement>) => {
-                    // No-op
-                  }}
-                >
-                  View all
-                </Button>
-              </div>
-              <div className="bg-neutral-border flex h-px w-full flex-none flex-col items-center gap-2" />
-              <div className="flex w-full flex-col items-start gap-1 px-4 py-4">
-                <div className="flex w-full items-center gap-4 rounded-md px-2 py-2">
-                  <Avatar image="https://res.cloudinary.com/subframe/image/upload/v1711417507/shared/fychrij7dzl8wgq2zjq9.avif">
-                    A
-                  </Avatar>
-                  <span className="text-body-bold font-body-bold text-default-font shrink-0 grow basis-0">
-                    Abigail
-                  </span>
-                  <span className="text-body font-body text-subtext-color">
-                    Oct 24
-                  </span>
-                </div>
-                <div className="flex w-full items-center gap-4 rounded-md px-2 py-2">
-                  <Avatar image="https://res.cloudinary.com/subframe/image/upload/v1711417514/shared/ubsk7cs5hnnaj798efej.jpg">
-                    A
-                  </Avatar>
-                  <span className="text-body-bold font-body-bold text-default-font shrink-0 grow basis-0">
-                    Jonah
-                  </span>
-                  <span className="text-body font-body text-subtext-color">
-                    Nov 5
-                  </span>
-                </div>
-                <div className="flex w-full items-center gap-4 rounded-md px-2 py-2">
-                  <Avatar image="https://res.cloudinary.com/subframe/image/upload/v1711417513/shared/kwut7rhuyivweg8tmyzl.jpg">
-                    A
-                  </Avatar>
-                  <span className="text-body-bold font-body-bold text-default-font shrink-0 grow basis-0">
-                    Michael
-                  </span>
-                  <span className="text-body font-body text-subtext-color">
-                    Nov 23
-                  </span>
-                </div>
-              </div>
-            </div>
+                  </li>
+                </ul>
+              </CardContent>
+            </Card>
           </div>
         </div>
       </div>
-    </DefaultPageLayout>
+    </AuthenticatedLayout>
   );
 }
 
-export default DashboardWithTiles;
+export default DashboardPage;

@@ -79,10 +79,10 @@ export default defineConfig({
       PORT: "3001",
       NODE_ENV: "test",
       ENABLE_TEST_AUTH: "true",
-      AUTH_SECRET: config.auth.secret ?? randomBytes(32).toString("hex"),
+      AUTH_SECRET: "test-secret-for-playwright",
       DATABASE_URL:
-        config.database.url ??
         "postgresql://postgres:password@localhost:5432/albeorla-ts-starter",
+      SKIP_ENV_VALIDATION: "true",
     },
   },
 });

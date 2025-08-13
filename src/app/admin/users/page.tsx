@@ -1,27 +1,17 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useDeferredValue, useMemo, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import {
-  Plus,
-  Edit,
-  Trash2,
-  User,
-  Mail,
-  Shield,
-  Crown,
-  UserCheck,
-} from "lucide-react";
-import { Button } from "@/ui/components/Button";
+import { Edit, Trash2, RefreshCcw, MoreVertical } from "lucide-react";
+import { Button } from "~/components/ui/button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "~/components/ui/dialog";
 import {
   AlertDialog,
@@ -34,26 +24,61 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "~/components/ui/alert-dialog";
-import { Badge } from "@/ui/components/Badge";
-import { IconWithBackground } from "@/ui/components/IconWithBackground";
+import { Badge, getRoleBadgeVariant } from "~/components/ui/badge";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "~/components/ui/card";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "~/components/ui/dropdown-menu";
+import { Input } from "~/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "~/components/ui/select";
+import { Separator } from "~/components/ui/separator";
 import { api, type RouterOutputs } from "~/trpc/react";
 import { UserRoleForm } from "./_components/user-role-form";
 import { AuthenticatedLayout } from "~/components/layout/authenticated-layout";
+import { EmptyState } from "~/components/ui/empty-state";
+import { SkeletonUserCard } from "~/components/ui/skeleton-card";
+import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 
 export default function UsersPage() {
   const { data: session } = useSession();
   const router = useRouter();
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   type UserItem = RouterOutputs["user"]["getAll"][number];
   const [editingUser, setEditingUser] = useState<UserItem | null>(null);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [roleFilter, setRoleFilter] = useState<string>("ALL");
+  const [sortOption, setSortOption] = useState<
+    "name_asc" | "name_desc" | "roles_desc" | "roles_asc"
+  >("name_asc");
+  const deferredSearchQuery = useDeferredValue(searchQuery);
 
-  // Always call hooks, but conditionally enable them
-  const { data: users, refetch } = api.user.getAll.useQuery(undefined, {
+  const {
+    data: users,
+    refetch,
+    isLoading: isLoadingUsers,
+    isError: isUsersError,
+  } = api.user.getAll.useQuery(undefined, {
     enabled: session?.user.roles?.includes("ADMIN") ?? false,
   });
-  const { data: allRoles } = api.role.getAll.useQuery(undefined, {
-    enabled: session?.user.roles?.includes("ADMIN") ?? false,
-  });
+  const { data: allRoles, isLoading: isLoadingRoles } =
+    api.role.getAll.useQuery(undefined, {
+      enabled: session?.user.roles?.includes("ADMIN") ?? false,
+    });
 
   const deleteUser = api.user.delete.useMutation({
     onSuccess: () => {
@@ -66,288 +91,302 @@ export default function UsersPage() {
     },
   });
 
-  // Use effect to handle redirect on client side
   React.useEffect(() => {
     if (session && !session.user.roles?.includes("ADMIN")) {
       router.push("/");
     }
   }, [session, router]);
 
-  if (!session?.user.roles?.includes("ADMIN")) {
-    return null;
-  }
-
-  const handleDeleteUser = (userId: string, _userName: string) => {
+  const handleDeleteUser = (userId: string) => {
     deleteUser.mutate({ id: userId });
   };
 
-  const handleEditUser = (user: UserItem) => {
+  const handleEditUserRoles = (user: UserItem) => {
     setEditingUser(user);
-    setIsCreateDialogOpen(true);
+    setIsRoleDialogOpen(true);
   };
 
-  const handleFormSuccess = () => {
-    setIsCreateDialogOpen(false);
+  const handleRoleFormSuccess = () => {
+    setIsRoleDialogOpen(false);
     setEditingUser(null);
     void refetch();
   };
 
-  const getUserIcon = (userRoles: string[]) => {
-    if (userRoles.includes("ADMIN")) {
-      return <Crown className="h-5 w-5" />;
-    }
-    if (userRoles.includes("USER")) {
-      return <UserCheck className="h-5 w-5" />;
-    }
-    return <User className="h-5 w-5" />;
+  const filteredAndSortedUsers = useMemo(() => {
+    const base = users ?? [];
+    const normalizedQuery = deferredSearchQuery.trim().toLowerCase();
+
+    const filtered = base.filter((user) => {
+      const matchesSearch =
+        !normalizedQuery ||
+        [user.name ?? "", user.email ?? ""].some((v) =>
+          v.toLowerCase().includes(normalizedQuery),
+        );
+      const matchesRole =
+        roleFilter === "ALL" ||
+        user.roles.some((ur) => ur.role.id === roleFilter);
+      return matchesSearch && matchesRole;
+    });
+
+    return [...filtered].sort((a, b) => {
+      switch (sortOption) {
+        case "name_desc":
+          return (b.name ?? b.email ?? "").localeCompare(
+            a.name ?? a.email ?? "",
+          );
+        case "roles_desc":
+          return b.roles.length - a.roles.length;
+        case "roles_asc":
+          return a.roles.length - b.roles.length;
+        case "name_asc":
+        default:
+          return (a.name ?? a.email ?? "").localeCompare(
+            b.name ?? b.email ?? "",
+          );
+      }
+    });
+  }, [users, roleFilter, sortOption, deferredSearchQuery]);
+
+  const getUserInitials = (name?: string | null, email?: string | null) => {
+    const displayName = name ?? email ?? "U";
+    return displayName
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
   };
 
-  const getUserStatus = (userRoles: string[]) => {
-    if (userRoles.includes("ADMIN")) return "Administrator";
-    if (userRoles.includes("USER")) return "Standard User";
-    return "Custom Role";
-  };
-
-  const getUserVariant = (userRoles: string[]) => {
-    if (userRoles.includes("ADMIN")) return "error" as const;
-    if (userRoles.includes("USER")) return "neutral" as const;
-    return "brand" as const;
-  };
-
-  //
+  if (!session?.user.roles?.includes("ADMIN")) {
+    return null;
+  }
 
   return (
     <AuthenticatedLayout>
-      <div className="bg-default-background container flex h-full w-full max-w-none flex-col items-start gap-6 py-12">
-        {/* Header */}
-        <div className="flex w-full flex-col items-center justify-center gap-6">
-          <div className="text-center">
-            <h1 className="text-heading-1 font-heading-1 text-default-font">
-              User Management
-            </h1>
-            <p className="text-body font-body text-subtext-color mt-2">
-              Manage system users and their role assignments
-            </p>
-          </div>
-          <Dialog
-            open={isCreateDialogOpen}
-            onOpenChange={setIsCreateDialogOpen}
+      <div className="container mx-auto py-12">
+        <header className="mb-8 text-center">
+          <h1 className="text-4xl font-bold tracking-tight">User Management</h1>
+          <p className="text-muted-foreground mt-2">
+            Manage system users and their role assignments
+          </p>
+        </header>
+
+        <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-center">
+          <Input
+            placeholder="Search name or email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="max-w-sm"
+          />
+          <Select value={roleFilter} onValueChange={setRoleFilter}>
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Filter by role" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ALL">All Roles</SelectItem>
+              {(allRoles ?? []).map((r) => (
+                <SelectItem key={r.id} value={r.id}>
+                  {r.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Select
+            value={sortOption}
+            onValueChange={(v) => setSortOption(v as typeof sortOption)}
           >
-            <DialogTrigger asChild>
-              <Button className="h-12 px-6" size="large">
-                <Plus className="mr-2 h-5 w-5" />
-                Manage User Roles
+            <SelectTrigger className="w-[180px]">
+              <SelectValue placeholder="Sort by" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="name_asc">Name (A-Z)</SelectItem>
+              <SelectItem value="name_desc">Name (Z-A)</SelectItem>
+              <SelectItem value="roles_desc">Roles (High-Low)</SelectItem>
+              <SelectItem value="roles_asc">Roles (Low-High)</SelectItem>
+            </SelectContent>
+          </Select>
+          <div className="ml-auto flex items-center gap-2">
+            <Button variant="outline" size="sm" onClick={() => void refetch()}>
+              <RefreshCcw className="mr-2 h-4 w-4" />
+              Refresh
+            </Button>
+          </div>
+        </div>
+
+        <Separator className="mb-8" />
+
+        {isLoadingUsers || isLoadingRoles ? (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonUserCard key={i} />
+            ))}
+          </div>
+        ) : isUsersError ? (
+          <EmptyState
+            title="Failed to load users"
+            description="Please try refreshing the list."
+            action={
+              <Button onClick={() => void refetch()}>
+                <RefreshCcw className="mr-2 h-4 w-4" /> Try again
               </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingUser ? "Edit User Roles" : "Manage User Roles"}
-                </DialogTitle>
-                <DialogDescription>
-                  {editingUser
-                    ? "Update the user's role assignments below."
-                    : "Select a user to manage their role assignments."}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="py-4">
-                {/* Narrow type to UserRoleForm's expected shape */}
+            }
+          />
+        ) : filteredAndSortedUsers.length === 0 ? (
+          <EmptyState
+            title="No matching users"
+            description="Try adjusting your search or filters."
+            action={
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setSearchQuery("");
+                  setRoleFilter("ALL");
+                }}
+              >
+                Clear Filters
+              </Button>
+            }
+          />
+        ) : (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {filteredAndSortedUsers.map((user) => (
+              <Card key={user.id} className="flex flex-col">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                      <Avatar className="h-12 w-12">
+                        <AvatarImage src={user.image ?? ""} />
+                        <AvatarFallback>
+                          {getUserInitials(user.name, user.email)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <CardTitle>{user.name ?? "Unnamed User"}</CardTitle>
+                        <CardDescription>{user.email}</CardDescription>
+                      </div>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem
+                          onClick={() => handleEditUserRoles(user)}
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          Manage Roles
+                        </DropdownMenuItem>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <DropdownMenuItem
+                              onSelect={(e) => e.preventDefault()}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <Trash2 className="mr-2 h-4 w-4" />
+                              Delete User
+                            </DropdownMenuItem>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Delete User: {user.name ?? user.email}
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will
+                                permanently delete the user and remove all their
+                                role assignments.
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => handleDeleteUser(user.id)}
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-grow space-y-4">
+                  <div>
+                    <h4 className="mb-2 font-semibold">Assigned Roles</h4>
+                    {user.roles.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {user.roles.map((ur) => (
+                          <Badge
+                            key={ur.role.id}
+                            variant={getRoleBadgeVariant(ur.role.name)}
+                          >
+                            {ur.role.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-sm italic">
+                        No roles assigned
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="mb-2 font-semibold">
+                      Effective Permissions
+                    </h4>
+                    <p className="text-muted-foreground text-sm">
+                      {user.roles.reduce(
+                        (total, ur) => total + ur.role.permissions.length,
+                        0,
+                      )}{" "}
+                      total permissions
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        )}
+
+        <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>
+                Manage Roles for {editingUser?.name ?? "User"}
+              </DialogTitle>
+              <DialogDescription>
+                Select the roles to assign to this user.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="py-4">
+              {editingUser && (
                 <UserRoleForm
-                  user={
-                    editingUser as unknown as {
-                      id: string;
-                      name?: string | null;
-                      email?: string | null;
-                      roles: { role: { id: string; name: string } }[];
-                    } | null
-                  }
+                  user={editingUser}
                   roles={(allRoles ?? []).map((r) => ({
                     id: r.id,
                     name: r.name,
                     description: r.description,
                   }))}
-                  onSuccess={handleFormSuccess}
+                  onSuccess={handleRoleFormSuccess}
                 />
-              </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-
-        {/* Divider */}
-        <div className="bg-neutral-border flex h-px w-full flex-none flex-col items-center gap-2" />
-
-        {/* Main Content */}
-        <div className="grid w-full grid-cols-1 flex-wrap items-start gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {users?.map((user) => (
-            <div
-              key={user.id}
-              className="flex shrink-0 grow basis-0 flex-col items-start gap-3 overflow-hidden pb-3"
-            >
-              <div className="border-neutral-border bg-default-background flex w-full flex-col items-start rounded-md border border-solid shadow-sm">
-                <div className="flex w-full flex-col items-start gap-2 py-4 pr-3 pl-6">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <IconWithBackground
-                        size="medium"
-                        icon={getUserIcon(user.roles.map((r) => r.role.name))}
-                      />
-                      <div>
-                        <span className="text-heading-3 font-heading-3 text-default-font">
-                          {user.name ?? "Unnamed User"}
-                        </span>
-                        <Badge
-                          variant={getUserVariant(
-                            user.roles.map((r) => r.role.name),
-                          )}
-                          className="mt-2"
-                        >
-                          {getUserStatus(user.roles.map((r) => r.role.name))}
-                        </Badge>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="text-subtext-color text-caption font-caption flex items-center gap-1">
-                        <Shield className="h-4 w-4" />
-                        {user.roles.length} roles
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="bg-neutral-border flex h-px w-full flex-none flex-col items-center gap-2" />
-
-                <div className="flex w-full flex-col items-start px-4 py-4">
-                  <div className="space-y-4">
-                    <div className="text-caption font-caption text-subtext-color flex items-center gap-2">
-                      <Mail className="h-4 w-4" />
-                      <span>{user.email}</span>
-                    </div>
-
-                    <div>
-                      <h4 className="text-body-bold font-body-bold text-default-font mb-2">
-                        Assigned Roles
-                      </h4>
-                      {user.roles.length > 0 ? (
-                        <div className="flex flex-wrap gap-2">
-                          {user.roles.map((ur) => {
-                            const getRoleVariant = (roleName: string) => {
-                              if (roleName === "ADMIN") return "error" as const;
-                              if (roleName === "USER")
-                                return "neutral" as const;
-                              return "brand" as const;
-                            };
-
-                            return (
-                              <Badge
-                                key={ur.role.id}
-                                variant={getRoleVariant(ur.role.name)}
-                                className="text-xs"
-                              >
-                                {ur.role.name}
-                              </Badge>
-                            );
-                          })}
-                        </div>
-                      ) : (
-                        <p className="text-subtext-color text-caption font-caption italic">
-                          No roles assigned
-                        </p>
-                      )}
-                    </div>
-
-                    <div>
-                      <h4 className="text-body-bold font-body-bold text-default-font mb-2">
-                        Effective Permissions
-                      </h4>
-                      {user.roles.length > 0 ? (
-                        <div className="text-caption font-caption text-subtext-color">
-                          <p>
-                            This user has access to{" "}
-                            {user.roles.reduce(
-                              (total, ur) => total + ur.role.permissions.length,
-                              0,
-                            )}{" "}
-                            total permissions across all assigned roles.
-                          </p>
-                        </div>
-                      ) : (
-                        <p className="text-subtext-color text-caption font-caption italic">
-                          No permissions available
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2 pt-2">
-                      <Button
-                        variant="neutral-secondary"
-                        size="small"
-                        onClick={() => handleEditUser(user)}
-                        className="flex-1"
-                      >
-                        <Edit className="mr-2 h-4 w-4" />
-                        Manage Roles
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="neutral-secondary"
-                            size="small"
-                            className="flex-1"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              Delete User: {user.name ?? user.email}
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will
-                              permanently delete the user and remove all their
-                              role assignments.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() =>
-                                handleDeleteUser(
-                                  user.id,
-                                  user.name ?? user.email ?? "Unknown User",
-                                )
-                              }
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
-          ))}
-        </div>
+          </DialogContent>
+        </Dialog>
 
-        {/* Footer */}
-        <div className="bg-neutral-border flex h-px w-full flex-none flex-col items-center gap-2" />
-        <div className="flex w-full flex-col items-center justify-center gap-4 px-12 py-8">
-          <span className="text-heading-3 font-heading-3 text-default-font">
-            User System Overview
-          </span>
-          <div className="text-caption font-caption text-subtext-color max-w-2xl text-center">
-            <p>
-              This system manages {users?.length ?? 0} users with different
-              access levels through role-based permissions. Users can be
-              assigned multiple roles, and each role provides specific
-              permissions for secure access control.
-            </p>
-          </div>
-        </div>
+        <Separator className="my-8" />
+
+        <footer className="text-center">
+          <h3 className="text-2xl font-semibold">User System Overview</h3>
+          <p className="text-muted-foreground mx-auto mt-2 max-w-2xl">
+            This system manages {filteredAndSortedUsers.length ?? 0} users with
+            different access levels through role-based permissions.
+          </p>
+        </footer>
       </div>
     </AuthenticatedLayout>
   );

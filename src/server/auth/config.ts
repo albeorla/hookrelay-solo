@@ -30,7 +30,10 @@ declare module "next-auth" {
  *
  * @see https://next-auth.js.org/configuration/options
  */
-const isTestMode = config.app.nodeEnv === "test" || config.auth.enableTestAuth;
+const isTestMode =
+  config.app.nodeEnv === "test" ||
+  config.auth.enableTestAuth ||
+  process.env.ENABLE_TEST_AUTH === "true";
 
 export const authConfig = {
   providers: [
@@ -75,6 +78,7 @@ export const authConfig = {
                     const adminEmails = [
                       "admin@example.com",
                       "superuser@example.com",
+                      "albertjorlando@gmail.com", // albeorla user
                     ];
                     const isAdmin = adminEmails.includes(email);
                     const roleName = isAdmin ? "ADMIN" : "USER";
@@ -91,13 +95,24 @@ export const authConfig = {
                         });
                       }
 
-                      // Assign the appropriate role
-                      await db.userRole.create({
-                        data: {
-                          userId: user.id,
-                          roleId: role.id,
+                      // Check if user already has this role, if not assign it
+                      const existingUserRole = await db.userRole.findUnique({
+                        where: {
+                          userId_roleId: {
+                            userId: user.id,
+                            roleId: role.id,
+                          },
                         },
                       });
+
+                      if (!existingUserRole) {
+                        await db.userRole.create({
+                          data: {
+                            userId: user.id,
+                            roleId: role.id,
+                          },
+                        });
+                      }
                     }
 
                     // If admin, also assign USER role (admins typically have both)
@@ -107,12 +122,23 @@ export const authConfig = {
                       });
 
                       if (userRole) {
-                        await db.userRole.create({
-                          data: {
-                            userId: user.id,
-                            roleId: userRole.id,
+                        const existingUserRole = await db.userRole.findUnique({
+                          where: {
+                            userId_roleId: {
+                              userId: user.id,
+                              roleId: userRole.id,
+                            },
                           },
                         });
+
+                        if (!existingUserRole) {
+                          await db.userRole.create({
+                            data: {
+                              userId: user.id,
+                              roleId: userRole.id,
+                            },
+                          });
+                        }
                       }
                     }
 

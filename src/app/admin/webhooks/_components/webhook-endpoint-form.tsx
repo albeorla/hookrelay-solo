@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from "~/components/ui/select";
 import { api } from "~/trpc/react";
+import { Loader2 } from "lucide-react";
 
 const webhookEndpointSchema = z
   .object({
@@ -40,7 +41,6 @@ const webhookEndpointSchema = z
   })
   .refine(
     (data) => {
-      // If HMAC mode is selected, secret is required
       if (data.hmacMode && !data.secret) {
         return false;
       }
@@ -89,9 +89,11 @@ export function WebhookEndpointForm({ onSuccess }: WebhookEndpointFormProps) {
     });
   };
 
+  const isSubmitting = createEndpoint.isPending;
+
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="endpointId"
@@ -99,11 +101,14 @@ export function WebhookEndpointForm({ onSuccess }: WebhookEndpointFormProps) {
             <FormItem>
               <FormLabel>Endpoint ID</FormLabel>
               <FormControl>
-                <Input placeholder="ep_my_service" {...field} />
+                <Input
+                  placeholder="ep_my_service"
+                  {...field}
+                  disabled={isSubmitting}
+                />
               </FormControl>
               <FormDescription>
-                Unique identifier for this webhook endpoint (e.g.,
-                ep_my_service)
+                A unique identifier for this webhook endpoint.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -120,10 +125,11 @@ export function WebhookEndpointForm({ onSuccess }: WebhookEndpointFormProps) {
                 <Input
                   placeholder="https://api.example.com/webhooks"
                   {...field}
+                  disabled={isSubmitting}
                 />
               </FormControl>
               <FormDescription>
-                The URL where webhooks will be delivered
+                The URL where webhooks will be delivered.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -136,7 +142,11 @@ export function WebhookEndpointForm({ onSuccess }: WebhookEndpointFormProps) {
           render={({ field }) => (
             <FormItem>
               <FormLabel>HMAC Verification Mode</FormLabel>
-              <Select onValueChange={field.onChange} defaultValue={field.value}>
+              <Select
+                onValueChange={field.onChange}
+                defaultValue={field.value}
+                disabled={isSubmitting}
+              >
                 <FormControl>
                   <SelectTrigger>
                     <SelectValue placeholder="None (no signature verification)" />
@@ -150,7 +160,7 @@ export function WebhookEndpointForm({ onSuccess }: WebhookEndpointFormProps) {
                 </SelectContent>
               </Select>
               <FormDescription>
-                Choose signature verification method for security
+                Choose a signature verification method for security.
               </FormDescription>
               <FormMessage />
             </FormItem>
@@ -169,10 +179,11 @@ export function WebhookEndpointForm({ onSuccess }: WebhookEndpointFormProps) {
                     type="password"
                     placeholder="your-secret-key"
                     {...field}
+                    disabled={isSubmitting}
                   />
                 </FormControl>
                 <FormDescription>
-                  Secret key for HMAC signature verification
+                  The secret key for HMAC signature verification.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -180,9 +191,18 @@ export function WebhookEndpointForm({ onSuccess }: WebhookEndpointFormProps) {
           />
         )}
 
-        <div className="flex justify-end space-x-2">
-          <Button type="submit" disabled={createEndpoint.isPending}>
-            {createEndpoint.isPending ? "Creating..." : "Create Endpoint"}
+        <div className="flex justify-end gap-4 pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onSuccess}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSubmitting ? "Creating..." : "Create Endpoint"}
           </Button>
         </div>
       </form>

@@ -3,6 +3,8 @@ import type { NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
   const isAuthPage = request.nextUrl.pathname === "/auth";
+  const isHealth = request.nextUrl.pathname.startsWith("/api/health");
+  if (isHealth) return NextResponse.next();
 
   // Check for session cookies (both NextAuth v4 and v5 cookie names)
   const sessionToken =

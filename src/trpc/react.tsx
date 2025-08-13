@@ -6,6 +6,7 @@ import { createTRPCReact } from "@trpc/react-query";
 import { type inferRouterInputs, type inferRouterOutputs } from "@trpc/server";
 import { useState } from "react";
 import SuperJSON from "superjson";
+import dynamic from "next/dynamic";
 
 import { type AppRouter } from "~/server/api/root";
 import { createQueryClient } from "./query-client";
@@ -67,6 +68,12 @@ export function TRPCReactProvider(props: { children: React.ReactNode }) {
       <api.Provider client={trpcClient} queryClient={queryClient}>
         {props.children}
       </api.Provider>
+      {process.env.NODE_ENV === "development" ? (
+        <ReactQueryDevtoolsDynamic
+          initialIsOpen={false}
+          buttonPosition="bottom-right"
+        />
+      ) : null}
     </QueryClientProvider>
   );
 }
@@ -77,3 +84,10 @@ function getBaseUrl() {
   const port = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
   return `http://localhost:${port}`;
 }
+
+// Load React Query Devtools only on the client
+const ReactQueryDevtoolsDynamic = dynamic(
+  () =>
+    import("@tanstack/react-query-devtools").then((m) => m.ReactQueryDevtools),
+  { ssr: false },
+);

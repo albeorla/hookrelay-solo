@@ -6,12 +6,24 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormDescription,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "~/components/ui/form";
+import { Input } from "~/components/ui/input";
+import { Textarea } from "~/components/ui/textarea";
+import { Checkbox } from "~/components/ui/checkbox";
 import { api } from "~/trpc/react";
+import { Loader2 } from "lucide-react";
 
 const roleSchema = z.object({
   name: z.string().min(1, "Role name is required"),
   description: z.string().optional(),
-  permissions: z.array(z.string()).optional(),
 });
 
 type RoleFormData = z.infer<typeof roleSchema>;
@@ -39,42 +51,20 @@ interface RoleFormProps {
 
 export function RoleForm({ role, permissions, onSuccess }: RoleFormProps) {
   const [selectedPermissions, setSelectedPermissions] = useState<string[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<RoleFormData>({
     resolver: zodResolver(roleSchema),
     defaultValues: {
       name: role?.name ?? "",
       description: role?.description ?? "",
-      permissions: [],
     },
   });
 
-  const createRole = api.role.create.useMutation({
-    onError: (error) => {
-      toast.error(`Failed to create role: ${error.message}`);
-    },
-  });
+  const createRole = api.role.create.useMutation();
+  const updateRole = api.role.update.useMutation();
+  const assignPermission = api.role.assignPermission.useMutation();
+  const removePermission = api.role.removePermission.useMutation();
 
-  const updateRole = api.role.update.useMutation({
-    onError: (error) => {
-      toast.error(`Failed to update role: ${error.message}`);
-    },
-  });
-
-  const assignPermission = api.role.assignPermission.useMutation({
-    onError: (error) => {
-      toast.error(`Failed to assign permission: ${error.message}`);
-    },
-  });
-
-  const removePermission = api.role.removePermission.useMutation({
-    onError: (error) => {
-      toast.error(`Failed to remove permission: ${error.message}`);
-    },
-  });
-
-  // Initialize form with role data if editing
   useEffect(() => {
     if (role) {
       form.reset({
@@ -82,24 +72,22 @@ export function RoleForm({ role, permissions, onSuccess }: RoleFormProps) {
         description: role.description ?? "",
       });
       setSelectedPermissions(role.permissions.map((rp) => rp.permission.id));
+    } else {
+      form.reset({ name: "", description: "" });
+      setSelectedPermissions([]);
     }
   }, [role, form]);
 
   const onSubmit = async (data: RoleFormData) => {
-    setIsSubmitting(true);
     try {
+      let roleId: string;
       if (role) {
         // Update existing role
-        await updateRole.mutateAsync({
-          id: role.id,
-          name: data.name,
-          description: data.description,
-        });
+        roleId = role.id;
+        await updateRole.mutateAsync({ id: roleId, ...data });
 
-        // Handle permission changes
-        const currentPermissions = role.permissions.map(
-          (rp) => rp.permission.id,
-        );
+        const currentPermissions =
+          role.permissions.map((rp) => rp.permission.id) ?? [];
         const permissionsToAdd = selectedPermissions.filter(
           (p) => !currentPermissions.includes(p),
         );
@@ -107,46 +95,33 @@ export function RoleForm({ role, permissions, onSuccess }: RoleFormProps) {
           (p) => !selectedPermissions.includes(p),
         );
 
-        // Add new permissions
-        for (const permissionId of permissionsToAdd) {
-          await assignPermission.mutateAsync({
-            roleId: role.id,
-            permissionId,
-          });
-        }
-
-        // Remove permissions
-        for (const permissionId of permissionsToRemove) {
-          await removePermission.mutateAsync({
-            roleId: role.id,
-            permissionId,
-          });
-        }
+        await Promise.all([
+          ...permissionsToAdd.map((permissionId) =>
+            assignPermission.mutateAsync({ roleId, permissionId }),
+          ),
+          ...permissionsToRemove.map((permissionId) =>
+            removePermission.mutateAsync({ roleId, permissionId }),
+          ),
+        ]);
 
         toast.success("Role updated successfully");
-        onSuccess();
       } else {
         // Create new role
-        const newRole = await createRole.mutateAsync({
-          name: data.name,
-          description: data.description,
-        });
+        const newRole = await createRole.mutateAsync(data);
+        roleId = newRole.id;
 
-        // Assign permissions to new role
-        for (const permissionId of selectedPermissions) {
-          await assignPermission.mutateAsync({
-            roleId: newRole.id,
-            permissionId,
-          });
-        }
+        await Promise.all(
+          selectedPermissions.map((permissionId) =>
+            assignPermission.mutateAsync({ roleId, permissionId }),
+          ),
+        );
 
         toast.success("Role created successfully");
-        onSuccess();
       }
+      onSuccess();
     } catch (error) {
+      toast.error("Failed to save role. Please try again.");
       console.error("Error saving role:", error);
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -158,61 +133,92 @@ export function RoleForm({ role, permissions, onSuccess }: RoleFormProps) {
     );
   };
 
+  const isSubmitting =
+    createRole.isPending ||
+    updateRole.isPending ||
+    assignPermission.isPending ||
+    removePermission.isPending;
+
   return (
-    <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
-      <div>
-        <label className="text-sm font-medium">Role Name</label>
-        <input
-          type="text"
-          placeholder="Enter role name"
-          className="w-full rounded border p-2"
-          disabled={role?.name === "ADMIN"}
-          {...form.register("name")}
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <FormField
+          control={form.control}
+          name="name"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Role Name</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="e.g., Content Editor"
+                  {...field}
+                  disabled={isSubmitting || role?.name === "ADMIN"}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-        {form.formState.errors.name && (
-          <p className="mt-1 text-sm text-red-500">
-            {form.formState.errors.name.message}
-          </p>
-        )}
-      </div>
 
-      <div>
-        <label className="text-sm font-medium">Description</label>
-        <textarea
-          placeholder="Describe what this role can do"
-          className="min-h-[80px] w-full rounded border p-2"
-          {...form.register("description")}
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Describe what this role can do"
+                  className="min-h-[100px]"
+                  {...field}
+                  disabled={isSubmitting}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
         />
-      </div>
 
-      <div>
-        <h4 className="mb-2 text-sm font-medium">Permissions</h4>
-        <div className="max-h-[200px] space-y-2 overflow-y-auto rounded-md border p-3">
-          {permissions.map((permission) => (
-            <div key={permission.id} className="flex items-center space-x-3">
-              <input
-                type="checkbox"
-                id={permission.id}
-                checked={selectedPermissions.includes(permission.id)}
-                onChange={() => handlePermissionToggle(permission.id)}
-                disabled={role?.name === "ADMIN"}
-              />
-              <label htmlFor={permission.id} className="text-sm">
-                {permission.name}
-              </label>
-            </div>
-          ))}
+        <div>
+          <FormLabel>Permissions</FormLabel>
+          <FormDescription className="mb-4">
+            Assign permissions to this role.
+          </FormDescription>
+          <div className="max-h-[250px] space-y-3 overflow-y-auto rounded-md border p-4">
+            {permissions.map((permission) => (
+              <div key={permission.id} className="flex items-center space-x-3">
+                <Checkbox
+                  id={permission.id}
+                  checked={selectedPermissions.includes(permission.id)}
+                  onCheckedChange={() => handlePermissionToggle(permission.id)}
+                  disabled={isSubmitting || role?.name === "ADMIN"}
+                />
+                <label
+                  htmlFor={permission.id}
+                  className="text-sm leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+                >
+                  {permission.name}
+                </label>
+              </div>
+            ))}
+          </div>
         </div>
-      </div>
 
-      <div className="flex justify-end gap-3 border-t pt-4">
-        <Button type="button" variant="outline" onClick={onSuccess}>
-          Cancel
-        </Button>
-        <Button type="submit" disabled={isSubmitting}>
-          {isSubmitting ? "Saving..." : role ? "Update Role" : "Create Role"}
-        </Button>
-      </div>
-    </form>
+        <div className="flex justify-end gap-4 pt-4">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onSuccess}
+            disabled={isSubmitting}
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={isSubmitting}>
+            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            {isSubmitting ? "Saving..." : role ? "Update Role" : "Create Role"}
+          </Button>
+        </div>
+      </form>
+    </Form>
   );
 }
