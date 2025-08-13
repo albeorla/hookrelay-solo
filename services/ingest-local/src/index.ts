@@ -39,8 +39,8 @@ app.post("/ingest/:endpointId", async (req: Request, res: Response) => {
       headers: {
         stripe_signature: req.header("Stripe-Signature"),
         x_hub_sig_256: req.header("X-Hub-Signature-256"),
-        x_signature: req.header("X-Signature"),
-        x_timestamp: req.header("X-Timestamp"),
+        x_signature: req.header("X-Signature") || req.header("x-signature"),
+        x_timestamp: req.header("X-Timestamp") || req.header("x-timestamp"),
         idempotency_key: req.header("Idempotency-Key"),
       },
       received_at: Date.now(),

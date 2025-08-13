@@ -80,21 +80,21 @@ async function verifySignature(
   if (!mode || !secret) return true; // permissive for dev
   switch (mode) {
     case "stripe": {
-      const sig = parseStripeSig(headers["stripe_signature"]);
+      const sig = parseStripeSig(headers.stripe_signature);
       if (!sig) return false;
       const payload = `t=${sig.t}.${body}`;
       const expected = hmacSha256Hex(secret, payload);
       return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig.v1));
     }
     case "github": {
-      const sig = headers["x_hub_sig_256"]?.replace(/^sha256=/, "");
+      const sig = headers.x_hub_sig_256?.replace(/^sha256=/, "");
       if (!sig) return false;
       const expected = hmacSha256Hex(secret, body);
       return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig));
     }
     case "generic": {
-      const ts = headers["x_timestamp"] || "";
-      const sig = headers["x_signature"];
+      const ts = headers.x_timestamp || "";
+      const sig = headers.x_signature;
       if (!sig) return false;
       const payload = ts ? `${ts}.${body}` : body;
       const expected = hmacSha256Hex(secret, payload);
@@ -150,15 +150,15 @@ function backoff(attempt: number) {
 // SQS_URL is optional in local dev; when absent, resolve via GetQueueUrl using QUEUE_NAME
 
 async function run() {
+  // Resolve queue URL once if needed
+  if (!sqsUrl) {
+    console.log(`Resolving queue URL for: ${queueName}`);
+    const q = await sqs.send(new GetQueueUrlCommand({ QueueName: queueName }));
+    sqsUrl = q.QueueUrl;
+    console.log(`Resolved queue URL: ${sqsUrl}`);
+  }
   console.log("worker listening on SQS", sqsUrl);
   for (;;) {
-    // Resolve queue URL once if needed
-    if (!sqsUrl) {
-      const q = await sqs.send(
-        new GetQueueUrlCommand({ QueueName: queueName }),
-      );
-      sqsUrl = q.QueueUrl;
-    }
     const res = await sqs.send(
       new ReceiveMessageCommand({
         QueueUrl: sqsUrl!,
@@ -168,11 +168,17 @@ async function run() {
       }),
     );
     const msgs = res.Messages || [];
+    console.log("Received", msgs.length, "messages from SQS");
     for (const m of msgs) {
       try {
+        console.log("Processing SQS message:", m.MessageId);
         const payload: InboundMsg = m.Body ? JSON.parse(m.Body) : ({} as any);
         const endpointId = payload.endpoint_id;
         if (!endpointId) throw new Error("missing endpoint_id");
+
+        console.log("Processing message for endpoint:", endpointId);
+        console.log("Raw body:", payload.raw_body);
+        console.log("Headers:", JSON.stringify(payload.headers, null, 2));
 
         // Load endpoint config
         const ep = await ddb.send(
@@ -182,12 +188,19 @@ async function run() {
           }),
         );
         if (!ep.Item) throw new Error("endpoint not found");
-        const destUrl = ep.Item.dest_url?.S as string | undefined;
-        const hmacMode = ep.Item.hmac_mode?.S as string | undefined;
-        const secret = ep.Item.secret?.S as string | undefined;
+        const destUrl = ep.Item.dest_url?.S;
+        const hmacMode = ep.Item.hmac_mode?.S;
+        const secret = ep.Item.secret?.S;
         const idk =
           payload.headers?.idempotency_key ||
           payload.headers?.["Idempotency-Key"]; // safety
+
+        console.log(
+          "Endpoint config - HMAC mode:",
+          hmacMode,
+          "Secret:",
+          secret ? "***" : "none",
+        );
 
         // Verify signature
         const ok = await verifySignature(
@@ -196,6 +209,7 @@ async function run() {
           payload.raw_body,
           payload.headers || {},
         );
+        console.log("Signature verification result:", ok);
         if (!ok) throw new Error("invalid signature");
 
         // Idempotency
