@@ -70,7 +70,7 @@
     "@smithy/util-utf8" "^2.0.0"
     tslib "^2.6.2"
 
-"@aws-sdk/client-dynamodb@^3.684.0":
+"@aws-sdk/client-dynamodb@^3.864.0":
   version "3.864.0"
   resolved "https://registry.yarnpkg.com/@aws-sdk/client-dynamodb/-/client-dynamodb-3.864.0.tgz#50b76a6751ea11676809bc52bd71d8ac34d2d895"
   integrity sha512-Z+8qCU8A8RKI/vaMZx3bUG3ZIvEBZzYRIEZA06Qx0QHttkDV/i2Q31Bs98Za/UV0aMXJYsgpHCvXeRgR7r8hYA==
@@ -183,7 +183,7 @@
     tslib "^2.6.2"
     uuid "^9.0.1"
 
-"@aws-sdk/client-sqs@^3.684.0":
+"@aws-sdk/client-sqs@^3.864.0":
   version "3.864.0"
   resolved "https://registry.yarnpkg.com/@aws-sdk/client-sqs/-/client-sqs-3.864.0.tgz#bc2e171fc4a806726b52a0152d41c9b13171868d"
   integrity sha512-SxEdQW/g2hb7/O4juAQL0kOD86/QBUSNkdJ5rN3Nd04rJmYTCxe38iCJBT637n+hiedxThLuj8H9ZmY1/OSg7Q==

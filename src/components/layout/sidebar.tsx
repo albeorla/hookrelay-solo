@@ -13,6 +13,7 @@ import {
   Menu,
   User,
   UserCircle,
+  Webhook,
 } from "lucide-react";
 import { ThemeToggle } from "~/components/ui/theme-toggle";
 import { cn } from "~/lib/utils";
@@ -71,6 +72,12 @@ export function Sidebar({ open, onOpenChange }: SidebarProps) {
       name: "Permissions",
       href: "/admin/permissions",
       icon: Key,
+      show: isAdmin,
+    },
+    {
+      name: "Webhooks",
+      href: "/admin/webhooks",
+      icon: Webhook,
       show: isAdmin,
     },
   ];

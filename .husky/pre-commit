@@ -1,1 +1,4 @@
-npx lint-staged
+#!/usr/bin/env sh
+
+# Run lint-staged via package script for consistency
+yarn lint:staged

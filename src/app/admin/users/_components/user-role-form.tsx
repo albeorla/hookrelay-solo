@@ -78,7 +78,7 @@ export function UserRoleForm({ user, roles, onSuccess }: UserRoleFormProps) {
                 <div className="flex items-center gap-2">
                   <span className="font-semibold">{role.name}</span>
                   {role.description && (
-                    <Badge variant="outline" className="text-xs">
+                    <Badge variant="secondary" className="text-xs">
                       {role.description}
                     </Badge>
                   )}

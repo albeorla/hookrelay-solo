@@ -1,6 +1,7 @@
 import { userRouter } from "~/server/api/routers/user";
 import { roleRouter } from "~/server/api/routers/role";
 import { permissionRouter } from "~/server/api/routers/permission";
+import { webhookRouter } from "~/server/api/routers/webhook";
 import { createCallerFactory, createTRPCRouter } from "~/server/api/trpc";
 
 /**
@@ -10,6 +11,7 @@ const staticRouters = {
   user: userRouter,
   role: roleRouter,
   permission: permissionRouter,
+  webhook: webhookRouter,
 };
 
 /**

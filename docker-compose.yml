@@ -14,7 +14,7 @@ services:
   ingest:
     build: ./services/ingest-local
     environment:
-      - PORT=3000
+      - PORT=3002
       - AWS_REGION=us-east-1
       - AWS_ACCESS_KEY_ID=test
       - AWS_SECRET_ACCESS_KEY=test
@@ -23,7 +23,7 @@ services:
     depends_on:
       - localstack
     ports:
-      - "3000:3000"
+      - "3002:3002"
 
   worker:
     build: ./services/worker

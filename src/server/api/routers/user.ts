@@ -8,7 +8,19 @@ import {
 export const userRouter = createTRPCRouter({
   getAll: adminProcedure.query(({ ctx }) => {
     return ctx.db.user.findMany({
-      include: { roles: { include: { role: true } } },
+      include: {
+        roles: {
+          include: {
+            role: {
+              include: {
+                permissions: {
+                  include: { permission: true },
+                },
+              },
+            },
+          },
+        },
+      },
     });
   }),
 
@@ -76,8 +88,25 @@ export const userRouter = createTRPCRouter({
 
         return prisma.user.findUnique({
           where: { id: userId },
-          include: { roles: { include: { role: true } } },
+          include: {
+            roles: {
+              include: {
+                role: {
+                  include: {
+                    permissions: { include: { permission: true } },
+                  },
+                },
+              },
+            },
+          },
         });
       });
+    }),
+
+  // Delete user
+  delete: adminProcedure
+    .input(z.object({ id: z.string() }))
+    .mutation(async ({ ctx, input }) => {
+      return ctx.db.user.delete({ where: { id: input.id } });
     }),
 });

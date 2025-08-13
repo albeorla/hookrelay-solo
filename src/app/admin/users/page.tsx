@@ -4,59 +4,65 @@ import React, { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Users, Shield, Mail, Calendar } from "lucide-react";
-import { Button } from "~/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import {
+  Plus,
+  Edit,
+  Trash2,
+  User,
+  Mail,
+  Shield,
+  Crown,
+  UserCheck,
+} from "lucide-react";
+import { Button } from "@/ui/components/Button";
 import {
   Dialog,
   DialogContent,
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 } from "~/components/ui/dialog";
-import { Badge } from "~/components/ui/badge";
-import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
-import { api } from "~/trpc/react";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "~/components/ui/alert-dialog";
+import { Badge } from "@/ui/components/Badge";
+import { IconWithBackground } from "@/ui/components/IconWithBackground";
+import { api, type RouterOutputs } from "~/trpc/react";
 import { UserRoleForm } from "./_components/user-role-form";
 import { AuthenticatedLayout } from "~/components/layout/authenticated-layout";
-import { EmptyState } from "~/components/ui/empty-state";
-import { SkeletonUserCard } from "~/components/ui/skeleton-card";
 
 export default function UsersPage() {
   const { data: session } = useSession();
   const router = useRouter();
-  const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<{
-    id: string;
-    name?: string | null;
-    email?: string | null;
-    roles: Array<{
-      role: {
-        id: string;
-        name: string;
-      };
-    }>;
-  } | null>(null);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  type UserItem = RouterOutputs["user"]["getAll"][number];
+  const [editingUser, setEditingUser] = useState<UserItem | null>(null);
 
   // Always call hooks, but conditionally enable them
-  const {
-    data: users,
-    refetch,
-    isLoading: isLoadingUsers,
-  } = api.user.getAll.useQuery(undefined, {
+  const { data: users, refetch } = api.user.getAll.useQuery(undefined, {
     enabled: session?.user.roles?.includes("ADMIN") ?? false,
   });
-  const { data: roles } = api.role.getAll.useQuery(undefined, {
+  const { data: allRoles } = api.role.getAll.useQuery(undefined, {
     enabled: session?.user.roles?.includes("ADMIN") ?? false,
   });
 
-  const setUserRoles = api.user.setUserRoles.useMutation({
+  const deleteUser = api.user.delete.useMutation({
     onSuccess: () => {
-      toast.success("User roles updated successfully");
+      toast.success("User deleted successfully");
       void refetch();
     },
-    onError: (error) => {
-      toast.error(`Failed to update user roles: ${error.message}`);
+    onError: (error: unknown) => {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      toast.error(`Failed to delete user: ${message}`);
     },
   });
 
@@ -71,217 +77,277 @@ export default function UsersPage() {
     return null;
   }
 
-  const handleRoleUpdate = async (userId: string, roleIds: string[]) => {
-    // Convert role IDs to role names
-    const selectedRoles =
-      roles?.filter((role) => roleIds.includes(role.id)) ?? [];
-    const roleNames = selectedRoles.map((role) => role.name);
-
-    await setUserRoles.mutateAsync({ userId, roleNames });
-    setIsRoleDialogOpen(false);
-    setSelectedUser(null);
+  const handleDeleteUser = (userId: string, _userName: string) => {
+    deleteUser.mutate({ id: userId });
   };
 
-  const handleEditRoles = (user: {
-    id: string;
-    name?: string | null;
-    email?: string | null;
-    roles: Array<{
-      role: {
-        id: string;
-        name: string;
-      };
-    }>;
-  }) => {
-    setSelectedUser(user);
-    setIsRoleDialogOpen(true);
+  const handleEditUser = (user: UserItem) => {
+    setEditingUser(user);
+    setIsCreateDialogOpen(true);
   };
 
-  const getUserInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
+  const handleFormSuccess = () => {
+    setIsCreateDialogOpen(false);
+    setEditingUser(null);
+    void refetch();
   };
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
+  const getUserIcon = (userRoles: string[]) => {
+    if (userRoles.includes("ADMIN")) {
+      return <Crown className="h-5 w-5" />;
+    }
+    if (userRoles.includes("USER")) {
+      return <UserCheck className="h-5 w-5" />;
+    }
+    return <User className="h-5 w-5" />;
   };
+
+  const getUserStatus = (userRoles: string[]) => {
+    if (userRoles.includes("ADMIN")) return "Administrator";
+    if (userRoles.includes("USER")) return "Standard User";
+    return "Custom Role";
+  };
+
+  const getUserVariant = (userRoles: string[]) => {
+    if (userRoles.includes("ADMIN")) return "error" as const;
+    if (userRoles.includes("USER")) return "neutral" as const;
+    return "brand" as const;
+  };
+
+  //
 
   return (
     <AuthenticatedLayout>
-      <div className="bg-background min-h-screen">
+      <div className="bg-default-background container flex h-full w-full max-w-none flex-col items-start gap-6 py-12">
         {/* Header */}
-        <header className="bg-card border-b">
-          <div className="container mx-auto px-4 py-6">
-            <h1 className="text-3xl font-bold">User Management</h1>
-            <p className="text-muted-foreground mt-1">
-              Manage users and their role assignments
+        <div className="flex w-full flex-col items-center justify-center gap-6">
+          <div className="text-center">
+            <h1 className="text-heading-1 font-heading-1 text-default-font">
+              User Management
+            </h1>
+            <p className="text-body font-body text-subtext-color mt-2">
+              Manage system users and their role assignments
             </p>
           </div>
-        </header>
-
-        <main className="container mx-auto px-4 py-8">
-          {/* Stats Cards */}
-          <div className="mb-6 grid grid-cols-1 gap-4 md:grid-cols-3">
-            <Card variant="stats">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Users
-                </CardTitle>
-                <div className="relative">
-                  <Users className="h-4 w-4 text-blue-500" />
-                  <div className="absolute inset-0 rounded-full bg-blue-500/20 blur-sm" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-blue-600">
-                  {users?.length ?? 0}
-                </div>
-              </CardContent>
-            </Card>
-            <Card variant="stats">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Active Roles
-                </CardTitle>
-                <div className="relative">
-                  <Shield className="h-4 w-4 text-emerald-500" />
-                  <div className="absolute inset-0 rounded-full bg-emerald-500/20 blur-sm" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-emerald-600">
-                  {roles?.length ?? 0}
-                </div>
-              </CardContent>
-            </Card>
-            <Card variant="stats">
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Admin Users
-                </CardTitle>
-                <div className="relative">
-                  <Shield className="h-4 w-4 text-red-500" />
-                  <div className="absolute inset-0 rounded-full bg-red-500/20 blur-sm" />
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold text-red-600">
-                  {users?.filter((user) =>
-                    user.roles.some((ur) => ur.role.name === "ADMIN"),
-                  ).length ?? 0}
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Users List */}
-          <div className="grid gap-4">
-            {isLoadingUsers ? (
-              <>
-                <SkeletonUserCard />
-                <SkeletonUserCard />
-                <SkeletonUserCard />
-              </>
-            ) : users && users.length > 0 ? (
-              users.map((user) => (
-                <Card key={user.id} variant="interactive">
-                  <CardContent className="p-6">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-4">
-                        <Avatar className="ring-primary/20 h-12 w-12 ring-2">
-                          <AvatarImage
-                            src={user.image ?? ""}
-                            alt={user.name ?? ""}
-                          />
-                          <AvatarFallback className="from-primary/20 to-primary/10 bg-gradient-to-br">
-                            {getUserInitials(user.name ?? user.email ?? "U")}
-                          </AvatarFallback>
-                        </Avatar>
-                        <div>
-                          <h3 className="text-lg font-semibold">
-                            {user.name ?? "Unnamed User"}
-                          </h3>
-                          <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                            <Mail className="h-3 w-3 text-blue-500" />
-                            {user.email}
-                          </div>
-                          {user.emailVerified && (
-                            <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                              <Calendar className="h-3 w-3 text-green-500" />
-                              Joined {formatDate(user.emailVerified.toString())}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-4">
-                        <div className="text-right">
-                          <div className="mb-2 flex flex-wrap justify-end gap-1">
-                            {user.roles.map((userRole) => (
-                              <Badge key={userRole.role.id} variant="secondary">
-                                {userRole.role.name}
-                              </Badge>
-                            ))}
-                            {user.roles.length === 0 && (
-                              <Badge variant="outline">No roles</Badge>
-                            )}
-                          </div>
-                          <p className="text-muted-foreground text-xs">
-                            {user.roles.length} role
-                            {user.roles.length !== 1 ? "s" : ""}
-                          </p>
-                        </div>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleEditRoles(user)}
-                        >
-                          Edit Roles
-                        </Button>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <EmptyState
-                icon={<Users className="h-12 w-12" />}
-                title="No users found"
-                description="No users have been created yet. Users will appear here once they sign up."
-              />
-            )}
-          </div>
-
-          {/* Role Assignment Dialog */}
-          <Dialog open={isRoleDialogOpen} onOpenChange={setIsRoleDialogOpen}>
-            <DialogContent>
+          <Dialog
+            open={isCreateDialogOpen}
+            onOpenChange={setIsCreateDialogOpen}
+          >
+            <DialogTrigger asChild>
+              <Button className="h-12 px-6" size="large">
+                <Plus className="mr-2 h-5 w-5" />
+                Manage User Roles
+              </Button>
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[500px]">
               <DialogHeader>
-                <DialogTitle>Edit User Roles</DialogTitle>
+                <DialogTitle>
+                  {editingUser ? "Edit User Roles" : "Manage User Roles"}
+                </DialogTitle>
                 <DialogDescription>
-                  Assign or remove roles for{" "}
-                  {selectedUser?.name ?? selectedUser?.email}
+                  {editingUser
+                    ? "Update the user's role assignments below."
+                    : "Select a user to manage their role assignments."}
                 </DialogDescription>
               </DialogHeader>
               <div className="py-4">
+                {/* Narrow type to UserRoleForm's expected shape */}
                 <UserRoleForm
-                  user={selectedUser}
-                  roles={roles ?? []}
-                  onSuccess={(roleIds) =>
-                    handleRoleUpdate(selectedUser?.id ?? "", roleIds)
+                  user={
+                    editingUser as unknown as {
+                      id: string;
+                      name?: string | null;
+                      email?: string | null;
+                      roles: { role: { id: string; name: string } }[];
+                    } | null
                   }
+                  roles={(allRoles ?? []).map((r) => ({
+                    id: r.id,
+                    name: r.name,
+                    description: r.description,
+                  }))}
+                  onSuccess={handleFormSuccess}
                 />
               </div>
             </DialogContent>
           </Dialog>
-        </main>
+        </div>
+
+        {/* Divider */}
+        <div className="bg-neutral-border flex h-px w-full flex-none flex-col items-center gap-2" />
+
+        {/* Main Content */}
+        <div className="grid w-full grid-cols-1 flex-wrap items-start gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {users?.map((user) => (
+            <div
+              key={user.id}
+              className="flex shrink-0 grow basis-0 flex-col items-start gap-3 overflow-hidden pb-3"
+            >
+              <div className="border-neutral-border bg-default-background flex w-full flex-col items-start rounded-md border border-solid shadow-sm">
+                <div className="flex w-full flex-col items-start gap-2 py-4 pr-3 pl-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <IconWithBackground
+                        size="medium"
+                        icon={getUserIcon(user.roles.map((r) => r.role.name))}
+                      />
+                      <div>
+                        <span className="text-heading-3 font-heading-3 text-default-font">
+                          {user.name ?? "Unnamed User"}
+                        </span>
+                        <Badge
+                          variant={getUserVariant(
+                            user.roles.map((r) => r.role.name),
+                          )}
+                          className="mt-2"
+                        >
+                          {getUserStatus(user.roles.map((r) => r.role.name))}
+                        </Badge>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="text-subtext-color text-caption font-caption flex items-center gap-1">
+                        <Shield className="h-4 w-4" />
+                        {user.roles.length} roles
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="bg-neutral-border flex h-px w-full flex-none flex-col items-center gap-2" />
+
+                <div className="flex w-full flex-col items-start px-4 py-4">
+                  <div className="space-y-4">
+                    <div className="text-caption font-caption text-subtext-color flex items-center gap-2">
+                      <Mail className="h-4 w-4" />
+                      <span>{user.email}</span>
+                    </div>
+
+                    <div>
+                      <h4 className="text-body-bold font-body-bold text-default-font mb-2">
+                        Assigned Roles
+                      </h4>
+                      {user.roles.length > 0 ? (
+                        <div className="flex flex-wrap gap-2">
+                          {user.roles.map((ur) => {
+                            const getRoleVariant = (roleName: string) => {
+                              if (roleName === "ADMIN") return "error" as const;
+                              if (roleName === "USER")
+                                return "neutral" as const;
+                              return "brand" as const;
+                            };
+
+                            return (
+                              <Badge
+                                key={ur.role.id}
+                                variant={getRoleVariant(ur.role.name)}
+                                className="text-xs"
+                              >
+                                {ur.role.name}
+                              </Badge>
+                            );
+                          })}
+                        </div>
+                      ) : (
+                        <p className="text-subtext-color text-caption font-caption italic">
+                          No roles assigned
+                        </p>
+                      )}
+                    </div>
+
+                    <div>
+                      <h4 className="text-body-bold font-body-bold text-default-font mb-2">
+                        Effective Permissions
+                      </h4>
+                      {user.roles.length > 0 ? (
+                        <div className="text-caption font-caption text-subtext-color">
+                          <p>
+                            This user has access to{" "}
+                            {user.roles.reduce(
+                              (total, ur) => total + ur.role.permissions.length,
+                              0,
+                            )}{" "}
+                            total permissions across all assigned roles.
+                          </p>
+                        </div>
+                      ) : (
+                        <p className="text-subtext-color text-caption font-caption italic">
+                          No permissions available
+                        </p>
+                      )}
+                    </div>
+
+                    <div className="flex items-center gap-2 pt-2">
+                      <Button
+                        variant="neutral-secondary"
+                        size="small"
+                        onClick={() => handleEditUser(user)}
+                        className="flex-1"
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        Manage Roles
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="neutral-secondary"
+                            size="small"
+                            className="flex-1"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Delete User: {user.name ?? user.email}
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will
+                              permanently delete the user and remove all their
+                              role assignments.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() =>
+                                handleDeleteUser(
+                                  user.id,
+                                  user.name ?? user.email ?? "Unknown User",
+                                )
+                              }
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* Footer */}
+        <div className="bg-neutral-border flex h-px w-full flex-none flex-col items-center gap-2" />
+        <div className="flex w-full flex-col items-center justify-center gap-4 px-12 py-8">
+          <span className="text-heading-3 font-heading-3 text-default-font">
+            User System Overview
+          </span>
+          <div className="text-caption font-caption text-subtext-color max-w-2xl text-center">
+            <p>
+              This system manages {users?.length ?? 0} users with different
+              access levels through role-based permissions. Users can be
+              assigned multiple roles, and each role provides specific
+              permissions for secure access control.
+            </p>
+          </div>
+        </div>
       </div>
     </AuthenticatedLayout>
   );
