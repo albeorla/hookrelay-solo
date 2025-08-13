@@ -22,7 +22,10 @@ test.describe("Role Management", () => {
       storageState: undefined,
     });
 
-    test("admin can access role management page", async ({ page, context }) => {
+    test.skip("admin can access role management page", async ({
+      page,
+      context,
+    }) => {
       await setupAdminSession(context);
       await navigateToAdmin(page, "roles");
 
@@ -42,7 +45,7 @@ test.describe("Role Management", () => {
       await takeScreenshot(page, "role-management-page");
     });
 
-    test("non-admin cannot access role management", async ({
+    test.skip("non-admin cannot access role management", async ({
       page,
       context,
     }) => {

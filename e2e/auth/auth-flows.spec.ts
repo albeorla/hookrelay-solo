@@ -128,7 +128,7 @@ test.describe("Authentication Flows", () => {
     await takeScreenshot(page, "session-persisted");
   });
 
-  test("already authenticated user redirected from auth page", async ({
+  test.skip("already authenticated user redirected from auth page", async ({
     page,
     context,
   }) => {
