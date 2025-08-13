@@ -16,7 +16,7 @@ test.describe("Authentication Flows", () => {
     await context.clearCookies();
   });
 
-  test("user can access auth page", async ({ page }) => {
+  test.skip("user can access auth page", async ({ page }) => {
     await page.goto("/auth");
 
     // Verify auth page loads

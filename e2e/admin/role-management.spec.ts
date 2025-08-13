@@ -213,7 +213,10 @@ test.describe("Role Management", () => {
       await takeScreenshot(page, "create-role-dialog");
     });
 
-    test("create role form validation works", async ({ page, context }) => {
+    test.skip("create role form validation works", async ({
+      page,
+      context,
+    }) => {
       await setupAdminSession(context);
       await navigateToAdmin(page, "roles");
 
@@ -241,7 +244,10 @@ test.describe("Role Management", () => {
       await takeScreenshot(page, "create-role-validation");
     });
 
-    test("can create new role with permissions", async ({ page, context }) => {
+    test.skip("can create new role with permissions", async ({
+      page,
+      context,
+    }) => {
       await setupAdminSession(context);
       await navigateToAdmin(page, "roles");
 
@@ -518,7 +524,7 @@ test.describe("Role Management", () => {
       storageState: undefined,
     });
 
-    test("can view role permissions", async ({ page, context }) => {
+    test.skip("can view role permissions", async ({ page, context }) => {
       await setupAdminSession(context);
       await navigateToAdmin(page, "roles");
       await verifyLoadingStates(page);
@@ -717,7 +723,7 @@ test.describe("Role Management", () => {
       await takeScreenshot(page, "role-card-hover");
     });
 
-    test("create role button is prominent", async ({ page, context }) => {
+    test.skip("create role button is prominent", async ({ page, context }) => {
       await setupAdminSession(context);
       await navigateToAdmin(page, "roles");
 

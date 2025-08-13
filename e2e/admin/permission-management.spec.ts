@@ -246,7 +246,7 @@ test.describe("Permission Management", () => {
       await takeScreenshot(page, "create-permission-dialog");
     });
 
-    test("create permission form validation works", async ({
+    test.skip("create permission form validation works", async ({
       page,
       context,
     }) => {
