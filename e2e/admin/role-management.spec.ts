@@ -317,7 +317,7 @@ test.describe("Role Management", () => {
 
       // Find an editable role (not ADMIN which might be protected)
       const editableRoles = page
-        .locator('[data-slot="card"]')
+        .locator(".border-neutral-border.bg-default-background")
         .filter({ hasText: /USER|TEST/ });
 
       if ((await editableRoles.count()) > 0) {
@@ -364,8 +364,9 @@ test.describe("Role Management", () => {
 
       // Find ADMIN role card
       const adminRoleCard = page
-        .locator('[data-slot="card"]')
-        .filter({ hasText: "ADMIN" });
+        .locator(".border-neutral-border.bg-default-background")
+        .filter({ hasText: "ADMIN" })
+        .first();
       await expect(adminRoleCard).toBeVisible();
 
       // Should not have edit/delete buttons for system roles
@@ -400,7 +401,7 @@ test.describe("Role Management", () => {
 
       // Look for deletable roles (not ADMIN)
       const deletableRoles = page
-        .locator('[data-slot="card"]')
+        .locator(".border-neutral-border.bg-default-background")
         .filter({ hasText: /TEST|CUSTOM/ });
 
       if ((await deletableRoles.count()) > 0) {
@@ -458,8 +459,9 @@ test.describe("Role Management", () => {
 
       // Find USER role which likely has assigned users
       const userRoleCard = page
-        .locator('[data-slot="card"]')
-        .filter({ hasText: "USER" });
+        .locator(".border-neutral-border.bg-default-background")
+        .filter({ hasText: "USER" })
+        .first();
 
       if (await userRoleCard.first().isVisible()) {
         // Check if it shows user count
@@ -518,8 +520,9 @@ test.describe("Role Management", () => {
 
       // Find ADMIN role which should have permissions
       const adminRoleCard = page
-        .locator('[data-slot="card"]')
-        .filter({ hasText: "ADMIN" });
+        .locator(".border-neutral-border.bg-default-background")
+        .filter({ hasText: "ADMIN" })
+        .first();
       await expect(adminRoleCard).toBeVisible();
 
       // Should show permissions section
