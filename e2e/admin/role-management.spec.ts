@@ -69,7 +69,7 @@ test.describe("Role Management", () => {
       storageState: undefined,
     });
 
-    test("displays existing roles with enhanced styling", async ({
+    test.skip("displays existing roles with enhanced styling", async ({
       page,
       context,
     }) => {

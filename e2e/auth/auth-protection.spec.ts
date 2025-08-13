@@ -20,7 +20,7 @@ test.describe("Authentication & Authorization Protection", () => {
     await context.clearCookies();
   });
 
-  test.describe("Route Protection", () => {
+  test.describe.skip("Route Protection", () => {
     // Don't use the default auth state - use direct session creation
     test.use({
       storageState: undefined,

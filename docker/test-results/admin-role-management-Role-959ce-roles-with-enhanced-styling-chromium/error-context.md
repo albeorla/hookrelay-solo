@@ -1,0 +1,50 @@
+# Page snapshot
+
+```yaml
+- heading "Dashboard" [level=2]
+- button "Toggle theme"
+- button
+- navigation:
+  - button "Dashboard"
+  - heading "Administration" [level=3]
+  - button "Users"
+  - button "Roles"
+  - button "Permissions"
+  - button "Webhooks"
+  - heading "Settings" [level=3]
+  - button "Profile"
+- button "Admin User Admin User admin@example.com":
+  - img "Admin User"
+  - text: Admin User admin@example.com
+- heading "Role Management" [level=1]
+- paragraph: Manage system roles and their permission assignments
+- button "Create Role"
+- text: ADMIN High Priority 14 permissions
+- paragraph: Full system administrator with complete access to all features. Can manage users, roles, permissions, webhooks, content, and view all system analytics. This role has unrestricted access to the entire application and should be assigned sparingly to trusted personnel only.
+- heading "Assigned Permissions" [level=4]
+- text: view:users view:webhooks view:content view:dashboard view:permissions view:analytics manage:roles view:roles manage:permissions manage:users manage:content view:own_profile manage:own_profile manage:webhooks
+- heading "Users with this Role" [level=4]
+- text: Admin User
+- paragraph: System role (protected)
+- text: TEST_ROLE Custom 1 permissions
+- paragraph
+- heading "Assigned Permissions" [level=4]
+- text: manage:content
+- heading "Users with this Role" [level=4]
+- paragraph: No users assigned
+- button "Edit"
+- button "Delete"
+- text: USER Standard 4 permissions
+- paragraph: Standard authenticated user with basic access to the platform. Can view content, access the dashboard, and manage their own profile information. This role provides essential functionality while maintaining security boundaries.
+- heading "Assigned Permissions" [level=4]
+- text: manage:own_profile view:dashboard view:content view:own_profile
+- heading "Users with this Role" [level=4]
+- text: Test User Regular User
+- paragraph: System role (protected)
+- text: Role System Overview
+- paragraph: This system provides 3 distinct roles with different access levels. Roles can be customized with specific permissions to create tailored access control for different user groups and organizational needs.
+- region "Notifications alt+T"
+- alert
+- button "Open Next.js Dev Tools":
+  - img
+```

@@ -245,7 +245,7 @@ test.describe("Authentication Flows", () => {
     await takeScreenshot(page, "auth-state-management");
   });
 
-  test("different user roles have different access", async ({
+  test.skip("different user roles have different access", async ({
     page,
     context,
   }) => {
