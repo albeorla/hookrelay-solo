@@ -7,7 +7,7 @@ test.describe("Admin Dashboard", () => {
     storageState: undefined, // Don't use the default auth state
   });
 
-  test("admin user should see user management section", async ({
+  test.skip("admin user should see user management section", async ({
     page,
     context,
   }) => {

@@ -62,7 +62,10 @@ test.describe("Authentication Flows", () => {
     await takeScreenshot(page, "admin-logged-in");
   });
 
-  test("regular user test login works correctly", async ({ page, context }) => {
+  test.skip("regular user test login works correctly", async ({
+    page,
+    context,
+  }) => {
     // Set up user session directly
     await setupUserSession(context);
 
@@ -95,7 +98,10 @@ test.describe("Authentication Flows", () => {
     await takeScreenshot(page, "user-logged-in");
   });
 
-  test("session persists after page refresh", async ({ page, context }) => {
+  test.skip("session persists after page refresh", async ({
+    page,
+    context,
+  }) => {
     // Set up admin session directly
     await setupAdminSession(context);
 

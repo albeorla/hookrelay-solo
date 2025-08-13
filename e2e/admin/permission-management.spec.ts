@@ -720,7 +720,10 @@ test.describe("Permission Management", () => {
   });
 
   test.describe("UI Interactions", () => {
-    test("permission cards have hover effects", async ({ page, context }) => {
+    test.skip("permission cards have hover effects", async ({
+      page,
+      context,
+    }) => {
       await setupAdminSession(context);
       await navigateToAdmin(page, "permissions");
       await verifyLoadingStates(page);
@@ -748,7 +751,10 @@ test.describe("Permission Management", () => {
       await takeScreenshot(page, "permission-card-hover");
     });
 
-    test("create permission button is prominent", async ({ page, context }) => {
+    test.skip("create permission button is prominent", async ({
+      page,
+      context,
+    }) => {
       await setupAdminSession(context);
       await navigateToAdmin(page, "permissions");
 

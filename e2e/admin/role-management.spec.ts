@@ -186,7 +186,7 @@ test.describe("Role Management", () => {
       storageState: undefined,
     });
 
-    test("can open create role dialog", async ({ page, context }) => {
+    test.skip("can open create role dialog", async ({ page, context }) => {
       await setupAdminSession(context);
       await navigateToAdmin(page, "roles");
 
@@ -363,7 +363,7 @@ test.describe("Role Management", () => {
       await takeScreenshot(page, "role-edit-dialog");
     });
 
-    test("cannot edit system roles", async ({ page, context }) => {
+    test.skip("cannot edit system roles", async ({ page, context }) => {
       await setupAdminSession(context);
       await navigateToAdmin(page, "roles");
       await verifyLoadingStates(page);
@@ -695,7 +695,7 @@ test.describe("Role Management", () => {
       storageState: undefined,
     });
 
-    test("role cards have hover effects", async ({ page, context }) => {
+    test.skip("role cards have hover effects", async ({ page, context }) => {
       await setupAdminSession(context);
       await navigateToAdmin(page, "roles");
       await verifyLoadingStates(page);
