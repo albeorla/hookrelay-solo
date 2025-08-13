@@ -361,6 +361,11 @@ test.describe("Role Management", () => {
       await setupAdminSession(context);
       await navigateToAdmin(page, "roles");
       await verifyLoadingStates(page);
+      await page.waitForLoadState("networkidle");
+      await page.waitForSelector(
+        ".border-neutral-border.bg-default-background",
+        { timeout: 10000 },
+      );
 
       // Find ADMIN role card
       const adminRoleCard = page
@@ -517,6 +522,11 @@ test.describe("Role Management", () => {
       await setupAdminSession(context);
       await navigateToAdmin(page, "roles");
       await verifyLoadingStates(page);
+      await page.waitForLoadState("networkidle");
+      await page.waitForSelector(
+        ".border-neutral-border.bg-default-background",
+        { timeout: 10000 },
+      );
 
       // Find ADMIN role which should have permissions
       const adminRoleCard = page
