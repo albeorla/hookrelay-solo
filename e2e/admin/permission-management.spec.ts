@@ -725,7 +725,9 @@ test.describe("Permission Management", () => {
       await navigateToAdmin(page, "permissions");
       await verifyLoadingStates(page);
 
-      const permissionCard = page.locator('[data-slot="card"]').first();
+      const permissionCard = page
+        .locator(".border-neutral-border.bg-default-background")
+        .first();
       await expect(permissionCard).toBeVisible();
 
       // Test hover effect

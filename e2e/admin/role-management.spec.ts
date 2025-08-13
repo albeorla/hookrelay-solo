@@ -85,13 +85,16 @@ test.describe("Role Management", () => {
 
       // Verify role cards are displayed
       const roleCards = page
-        .locator('[data-slot="card"]')
+        .locator(".border-neutral-border.bg-default-background")
         .filter({ hasText: /ADMIN|USER|TEST/ });
       const cardCount = await roleCards.count();
       expect(cardCount).toBeGreaterThan(0);
 
       // Verify enhanced card styling (use first card to avoid strict mode violation)
-      await verifyCardStyling(page, '[data-slot="card"]:first-child');
+      await verifyCardStyling(
+        page,
+        ".border-neutral-border.bg-default-background:first-child",
+      );
 
       // Verify specific roles exist
       await expect(page.getByText("ADMIN").first()).toBeVisible();
