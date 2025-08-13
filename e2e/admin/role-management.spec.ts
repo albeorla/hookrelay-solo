@@ -51,19 +51,13 @@ test.describe("Role Management", () => {
       // Try to access role management
       await page.goto("/admin/roles");
       await waitForPageLoad(page);
-
-      const currentUrl = page.url();
-      if (currentUrl.includes("/admin/roles")) {
-        // Should show access denied
-        await expect(
-          page
-            .getByText(/access denied/i)
-            .or(page.getByText(/not authorized/i)),
-        ).toBeVisible();
-      } else {
-        // Should be redirected away
-        expect(currentUrl).not.toContain("/admin/roles");
-      }
+      // Client-side redirect should send non-admins away from /admin/roles
+      await page
+        .waitForURL((url) => !url.toString().includes("/admin/roles"), {
+          timeout: 5000,
+        })
+        .catch(() => undefined);
+      expect(page.url()).not.toContain("/admin/roles");
 
       await takeScreenshot(page, "role-management-access-denied");
     });
@@ -82,6 +76,12 @@ test.describe("Role Management", () => {
       await setupAdminSession(context);
       await navigateToAdmin(page, "roles");
       await verifyLoadingStates(page);
+      await page.waitForLoadState("networkidle");
+      // Ensure at least one role card is rendered before counting
+      await page.waitForSelector(
+        ".border-neutral-border.bg-default-background",
+        { timeout: 10000 },
+      );
 
       // Verify role cards are displayed
       const roleCards = page
@@ -110,56 +110,43 @@ test.describe("Role Management", () => {
 
       // Find ADMIN role card
       const adminRoleCard = page
-        .locator('[data-slot="card"]')
-        .filter({ hasText: "ADMIN" });
+        .locator(".border-neutral-border.bg-default-background")
+        .filter({ hasText: "ADMIN" })
+        .first();
       await expect(adminRoleCard).toBeVisible();
 
       // Verify role information (use first() to avoid strict mode violation)
       await expect(adminRoleCard.getByText("ADMIN").first()).toBeVisible();
 
-      // Check for either System badge or Administrator description text
-      const hasSystemBadge = await adminRoleCard
-        .getByText("System")
-        .first()
-        .isVisible()
-        .catch(() => false);
+      // Check for Administrator description text
       const hasAdministratorText = await adminRoleCard
-        .getByText("Administrator")
+        .getByText(/Administrator/i)
         .first()
         .isVisible()
         .catch(() => false);
-      expect(hasSystemBadge || hasAdministratorText).toBeTruthy();
+      expect(hasAdministratorText).toBeTruthy();
 
       // Verify permissions section
-      const permissionsSection = adminRoleCard
-        .locator('text="Permissions"')
-        .locator("..");
-      if (await permissionsSection.isVisible()) {
-        // Should show permission badges
-        const permissionBadges = adminRoleCard
-          .locator('[data-slot="badge"]')
-          .filter({
-            hasText: /manage:|view:/,
-          });
-        const badgeCount = await permissionBadges.count();
-        expect(badgeCount).toBeGreaterThan(0);
+      const permissionsHeader = adminRoleCard
+        .getByText(/Assigned Permissions|Permissions/i)
+        .first();
+      if (await permissionsHeader.isVisible()) {
+        // Should show at least one permission label within the section
+        const permissionLabels = adminRoleCard
+          .locator("div")
+          .filter({ hasText: /manage:|view:/ });
+        expect(await permissionLabels.count()).toBeGreaterThan(0);
       }
 
       // Verify users section
-      const usersSection = adminRoleCard.locator('text="Users"').locator("..");
-      if (await usersSection.isVisible()) {
-        // Should show user count or user names
-        const hasUserCount = await adminRoleCard
-          .getByText(/\d+ users?/)
-          .first()
-          .isVisible()
-          .catch(() => false);
-        const hasAdminUser = await adminRoleCard
-          .getByText("Admin User")
-          .first()
-          .isVisible()
-          .catch(() => false);
-        expect(hasUserCount || hasAdminUser).toBeTruthy();
+      const usersHeader = adminRoleCard
+        .getByText(/Users with this Role|Users/i)
+        .first();
+      if (await usersHeader.isVisible()) {
+        // Should show user names for ADMIN role
+        await expect(
+          adminRoleCard.getByText(/Admin User|admin@example\.com/i).first(),
+        ).toBeVisible();
       }
 
       await takeScreenshot(page, "role-card-details");
@@ -694,7 +681,9 @@ test.describe("Role Management", () => {
       await navigateToAdmin(page, "roles");
       await verifyLoadingStates(page);
 
-      const roleCard = page.locator('[data-slot="card"]').first();
+      const roleCard = page
+        .locator(".border-neutral-border.bg-default-background")
+        .first();
       await expect(roleCard).toBeVisible();
 
       // Test hover effect
