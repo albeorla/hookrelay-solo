@@ -1,72 +1,28 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
-import { toast } from "sonner";
 import {
-  Plus,
-  Edit,
-  Trash2,
   Key,
   Shield,
   Users,
   Settings,
   Eye,
   Lock,
+  AlertTriangle,
 } from "lucide-react";
-import { Button } from "~/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "~/components/ui/dialog";
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "~/components/ui/alert-dialog";
 import { Badge, getRoleBadgeVariant } from "~/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Separator } from "~/components/ui/separator";
 import { api } from "~/trpc/react";
-import { PermissionForm } from "./_components/permission-form";
 import { AuthenticatedLayout } from "~/components/layout/authenticated-layout";
 
 export default function PermissionsPage() {
   const { data: session } = useSession();
   const router = useRouter();
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const [editingPermission, setEditingPermission] = useState<{
-    id: string;
-    name: string;
-    description?: string | null;
-  } | null>(null);
-
-  const { data: permissions, refetch } = api.permission.getAll.useQuery(
-    undefined,
-    {
-      enabled: session?.user.roles?.includes("ADMIN") ?? false,
-    },
-  );
-
-  const deletePermission = api.permission.delete.useMutation({
-    onSuccess: () => {
-      toast.success("Permission deleted successfully");
-      void refetch();
-    },
-    onError: (error) => {
-      toast.error(`Failed to delete permission: ${error.message}`);
-    },
+  const { data: permissions } = api.permission.getAll.useQuery(undefined, {
+    enabled: session?.user.roles?.includes("ADMIN") ?? false,
   });
 
   React.useEffect(() => {
@@ -78,25 +34,6 @@ export default function PermissionsPage() {
   if (!session?.user.roles?.includes("ADMIN")) {
     return null;
   }
-
-  const handleDeletePermission = (permissionId: string) => {
-    deletePermission.mutate({ id: permissionId });
-  };
-
-  const handleEditPermission = (permission: {
-    id: string;
-    name: string;
-    description?: string | null;
-  }) => {
-    setEditingPermission(permission);
-    setIsCreateDialogOpen(true);
-  };
-
-  const handleFormSuccess = () => {
-    setIsCreateDialogOpen(false);
-    setEditingPermission(null);
-    void refetch();
-  };
 
   const getPermissionIcon = (permissionName: string) => {
     const iconProps = { className: "h-5 w-5 text-muted-foreground" };
@@ -137,46 +74,15 @@ export default function PermissionsPage() {
     <AuthenticatedLayout>
       <div className="container mx-auto py-12">
         <header className="mb-8 text-center">
-          <h1 className="text-4xl font-bold tracking-tight">
-            Permission Management
-          </h1>
+          <h1 className="text-4xl font-bold tracking-tight">Permissions</h1>
           <p className="text-muted-foreground mt-2">
-            Manage system permissions and their role assignments
+            Permissions are seeded and map 1:1 to product features. They cannot
+            be created or edited in the app.
           </p>
-          <Dialog
-            open={isCreateDialogOpen}
-            onOpenChange={(isOpen) => {
-              setIsCreateDialogOpen(isOpen);
-              if (!isOpen) setEditingPermission(null);
-            }}
-          >
-            <DialogTrigger asChild>
-              <Button size="lg" className="mt-6">
-                <Plus className="mr-2 h-5 w-5" />
-                Create Permission
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="sm:max-w-[500px]">
-              <DialogHeader>
-                <DialogTitle>
-                  {editingPermission
-                    ? "Edit Permission"
-                    : "Create New Permission"}
-                </DialogTitle>
-                <DialogDescription>
-                  {editingPermission
-                    ? "Update the permission details below."
-                    : "Create a new permission with the details below."}
-                </DialogDescription>
-              </DialogHeader>
-              <div className="py-4">
-                <PermissionForm
-                  permission={editingPermission}
-                  onSuccess={handleFormSuccess}
-                />
-              </div>
-            </DialogContent>
-          </Dialog>
+          <div className="text-muted-foreground mt-4 inline-flex items-center gap-2 rounded-md border px-3 py-2 text-sm">
+            <AlertTriangle className="h-4 w-4" />
+            Manage assignments by editing roles. Update the catalog via seeding.
+          </div>
         </header>
 
         <Separator className="mb-8" />
@@ -230,53 +136,8 @@ export default function PermissionsPage() {
                   )}
                 </div>
               </CardContent>
-              <div className="border-t p-4">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleEditPermission(permission)}
-                    className="flex-1"
-                  >
-                    <Edit className="mr-2 h-4 w-4" />
-                    Edit
-                  </Button>
-                  <AlertDialog>
-                    <AlertDialogTrigger asChild>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="flex-1"
-                        color="destructive"
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete
-                      </Button>
-                    </AlertDialogTrigger>
-                    <AlertDialogContent>
-                      <AlertDialogHeader>
-                        <AlertDialogTitle>
-                          Delete Permission: {permission.name}
-                        </AlertDialogTitle>
-                        <AlertDialogDescription>
-                          This action cannot be undone. This will permanently
-                          delete the permission and remove it from all roles.
-                          {permission.roles.length > 0 &&
-                            ` This permission is currently assigned to ${permission.roles.length} role(s).`}
-                        </AlertDialogDescription>
-                      </AlertDialogHeader>
-                      <AlertDialogFooter>
-                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                        <AlertDialogAction
-                          onClick={() => handleDeletePermission(permission.id)}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        >
-                          Delete
-                        </AlertDialogAction>
-                      </AlertDialogFooter>
-                    </AlertDialogContent>
-                  </AlertDialog>
-                </div>
+              <div className="text-muted-foreground border-t p-4 text-center text-sm">
+                View-only. Assign permissions on the Roles page.
               </div>
             </Card>
           ))}

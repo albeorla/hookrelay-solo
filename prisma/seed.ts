@@ -27,8 +27,38 @@ async function main() {
   });
 
   console.log("Created roles:", { adminRole, userRole });
+  // Canonical permission catalog currently used by the app
+  const canonicalPermissions = [
+    "manage:users",
+    "view:users",
+    "manage:roles",
+    "view:roles",
+    "view:permissions",
+    "manage:webhooks",
+    "view:webhooks",
+    "manage:own_profile",
+    "view:own_profile",
+    "view:dashboard",
+  ] as const;
 
-  // Create comprehensive permissions covering all functionality with detailed descriptions
+  // Remove any permissions not in the canonical list and their assignments
+  const obsolete = await prisma.permission.findMany({
+    where: { name: { notIn: [...canonicalPermissions] } },
+    select: { id: true, name: true },
+  });
+
+  if (obsolete.length > 0) {
+    const obsoleteIds = obsolete.map((p) => p.id);
+    await prisma.rolePermission.deleteMany({
+      where: { permissionId: { in: obsoleteIds } },
+    });
+    await prisma.permission.deleteMany({ where: { id: { in: obsoleteIds } } });
+    console.log(
+      `Removed obsolete permissions: ${obsolete.map((p) => p.name).join(", ")}`,
+    );
+  }
+
+  // Ensure the canonical permissions exist (upsert)
   const permissions = await Promise.all([
     // User Management
     prisma.permission.upsert({
@@ -37,7 +67,7 @@ async function main() {
       create: {
         name: "manage:users",
         description:
-          "Full user lifecycle management: create, edit, delete, suspend, and restore user accounts. Includes assigning/removing roles, resetting passwords, and managing user preferences. Essential for system administration and user onboarding.",
+          "Full user lifecycle management: create, edit, delete, suspend, and restore user accounts. Includes assigning/removing roles, resetting passwords, and managing user preferences.",
       },
     }),
     prisma.permission.upsert({
@@ -46,7 +76,7 @@ async function main() {
       create: {
         name: "view:users",
         description:
-          "Read-only access to user information including profiles, basic details, and role assignments. Useful for support staff, team leads, and administrators who need to understand user distribution without making changes.",
+          "Read-only access to user information including profiles, basic details, and role assignments.",
       },
     }),
 
@@ -57,7 +87,7 @@ async function main() {
       create: {
         name: "manage:roles",
         description:
-          "Complete role administration: create new roles, modify existing role definitions, delete unused roles, and adjust role hierarchies. Critical for implementing organizational access control policies and maintaining security compliance.",
+          "Complete role administration: create new roles, modify existing role definitions, delete unused roles, and adjust role hierarchies.",
       },
     }),
     prisma.permission.upsert({
@@ -66,58 +96,18 @@ async function main() {
       create: {
         name: "view:roles",
         description:
-          "Browse available roles, view role descriptions, and see which permissions are assigned to each role. Helps users understand the access levels available and assists in role selection during user onboarding.",
+          "Browse available roles, view role descriptions, and see which permissions are assigned to each role.",
       },
     }),
 
-    // Permission Management
-    prisma.permission.upsert({
-      where: { name: "manage:permissions" },
-      update: {},
-      create: {
-        name: "manage:permissions",
-        description:
-          "Granular permission control: create custom permissions, modify permission descriptions, delete obsolete permissions, and manage permission-role assignments. Enables fine-tuning of access control to match business requirements.",
-      },
-    }),
+    // Permissions listing (read-only in app)
     prisma.permission.upsert({
       where: { name: "view:permissions" },
       update: {},
       create: {
         name: "view:permissions",
         description:
-          "Browse the complete permission catalog, understand what each permission allows, and see which roles have been granted specific permissions. Essential for security audits and understanding system capabilities.",
-      },
-    }),
-
-    // Analytics & Reporting
-    prisma.permission.upsert({
-      where: { name: "view:analytics" },
-      update: {},
-      create: {
-        name: "view:analytics",
-        description:
-          "Access to comprehensive system analytics including user activity metrics, performance statistics, webhook delivery rates, error logs, and system health indicators. Provides insights for capacity planning and operational monitoring.",
-      },
-    }),
-
-    // Content Management
-    prisma.permission.upsert({
-      where: { name: "manage:content" },
-      update: {},
-      create: {
-        name: "manage:content",
-        description:
-          "Full content administration: create, edit, publish, unpublish, and delete application content. Includes managing static pages, dynamic content, media assets, and content workflows. Essential for content teams and marketing operations.",
-      },
-    }),
-    prisma.permission.upsert({
-      where: { name: "view:content" },
-      update: {},
-      create: {
-        name: "view:content",
-        description:
-          "Read access to all published and draft content within the application. Allows users to browse, search, and consume content without the ability to modify it. Basic permission for all authenticated users.",
+          "Browse the complete permission catalog and see which roles have specific permissions.",
       },
     }),
 
@@ -128,7 +118,7 @@ async function main() {
       create: {
         name: "manage:webhooks",
         description:
-          "Complete webhook administration: create new webhook endpoints, configure delivery settings, manage authentication secrets, set up retry policies, and monitor webhook performance. Critical for integrating with external systems and APIs.",
+          "Create and manage webhook endpoints, configure delivery settings, and monitor performance.",
       },
     }),
     prisma.permission.upsert({
@@ -136,8 +126,7 @@ async function main() {
       update: {},
       create: {
         name: "view:webhooks",
-        description:
-          "Monitor webhook endpoints, view delivery logs, check success/failure rates, and access webhook statistics. Useful for developers, support teams, and operations staff who need visibility into webhook performance.",
+        description: "View webhook endpoints and delivery logs.",
       },
     }),
 
@@ -147,8 +136,7 @@ async function main() {
       update: {},
       create: {
         name: "manage:own_profile",
-        description:
-          "Users can update their personal information including name, email, profile picture, preferences, and account settings. Allows self-service profile management without requiring administrative intervention.",
+        description: "Users can update their own profile details and settings.",
       },
     }),
     prisma.permission.upsert({
@@ -157,7 +145,7 @@ async function main() {
       create: {
         name: "view:own_profile",
         description:
-          "Access to view one's own profile information, account details, and personal settings. Basic permission that enables users to see their account status and verify their information is correct.",
+          "Access to view one's own profile information, account details, and personal settings.",
       },
     }),
 
@@ -168,7 +156,7 @@ async function main() {
       create: {
         name: "view:dashboard",
         description:
-          "Access to the main application dashboard showing personalized content, quick actions, recent activity, and system status. Provides the primary user interface and navigation hub for the application.",
+          "Access to the main application dashboard showing personalized content, quick actions, and recent activity.",
       },
     }),
   ]);
@@ -242,19 +230,6 @@ async function main() {
       create: {
         roleId: userRole.id,
         permissionId: permissions.find((p) => p.name === "view:dashboard")!.id,
-      },
-    }),
-    prisma.rolePermission.upsert({
-      where: {
-        roleId_permissionId: {
-          roleId: userRole.id,
-          permissionId: permissions.find((p) => p.name === "view:content")!.id,
-        },
-      },
-      update: {},
-      create: {
-        roleId: userRole.id,
-        permissionId: permissions.find((p) => p.name === "view:content")!.id,
       },
     }),
   ]);

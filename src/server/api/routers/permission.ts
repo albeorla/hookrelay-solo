@@ -18,7 +18,8 @@ export const permissionRouter = createTRPCRouter({
     });
   }),
 
-  // Get permission by ID
+  // Permissions are immutable via app UI; modified only via seeding
+  // Expose only read operations in this router
   getById: adminProcedure
     .input(z.object({ id: z.string() }))
     .query(async ({ ctx, input }) => {
@@ -38,114 +39,6 @@ export const permissionRouter = createTRPCRouter({
       }
 
       return permission;
-    }),
-
-  // Create new permission
-  create: adminProcedure
-    .input(
-      z.object({
-        name: z.string().min(1, "Permission name is required"),
-        description: z.string().optional(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      // Check if permission with same name already exists
-      const existingPermission = await ctx.db.permission.findUnique({
-        where: { name: input.name },
-      });
-
-      if (existingPermission) {
-        throw new Error("Permission with this name already exists");
-      }
-
-      return ctx.db.permission.create({
-        data: {
-          name: input.name,
-          description: input.description,
-        },
-        include: {
-          roles: {
-            include: {
-              role: true,
-            },
-          },
-        },
-      });
-    }),
-
-  // Update permission
-  update: adminProcedure
-    .input(
-      z.object({
-        id: z.string(),
-        name: z.string().min(1, "Permission name is required"),
-        description: z.string().optional(),
-      }),
-    )
-    .mutation(async ({ ctx, input }) => {
-      // Check if permission exists
-      const existingPermission = await ctx.db.permission.findUnique({
-        where: { id: input.id },
-      });
-
-      if (!existingPermission) {
-        throw new Error("Permission not found");
-      }
-
-      // Check if new name conflicts with another permission
-      const conflictingPermission = await ctx.db.permission.findFirst({
-        where: {
-          name: input.name,
-          id: { not: input.id },
-        },
-      });
-
-      if (conflictingPermission) {
-        throw new Error("Permission with this name already exists");
-      }
-
-      return ctx.db.permission.update({
-        where: { id: input.id },
-        data: {
-          name: input.name,
-          description: input.description,
-        },
-        include: {
-          roles: {
-            include: {
-              role: true,
-            },
-          },
-        },
-      });
-    }),
-
-  // Delete permission
-  delete: adminProcedure
-    .input(z.object({ id: z.string() }))
-    .mutation(async ({ ctx, input }) => {
-      // Check if permission exists
-      const permission = await ctx.db.permission.findUnique({
-        where: { id: input.id },
-        include: {
-          roles: true,
-        },
-      });
-
-      if (!permission) {
-        throw new Error("Permission not found");
-      }
-
-      // Check if permission is assigned to any roles
-      if (permission.roles.length > 0) {
-        throw new Error(
-          "Cannot delete permission that is assigned to roles. Remove all role assignments first.",
-        );
-      }
-
-      return ctx.db.permission.delete({
-        where: { id: input.id },
-      });
     }),
 
   // Get permissions for a specific role

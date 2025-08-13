@@ -16,7 +16,6 @@ import {
   Webhook,
   Menu,
   LogOut,
-  BarChart,
 } from "lucide-react";
 import { signOut, useSession } from "next-auth/react";
 import Link from "next/link";
@@ -25,12 +24,6 @@ import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: Home },
-  {
-    href: "/admin/dashboard",
-    label: "Admin Dashboard",
-    icon: BarChart,
-    admin: true,
-  },
   { href: "/admin/users", label: "Users", icon: Users, admin: true },
   {
     href: "/admin/roles",
