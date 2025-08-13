@@ -32,8 +32,8 @@ ENV PORT=3001
 # Expose ports
 EXPOSE 3000 3001
 
-# Make entrypoint executable
-RUN chmod +x /app/entrypoint.sh
+# Make entrypoint executable (it's in scripts/ directory)
+RUN chmod +x /app/scripts/entrypoint.sh
 
 # Use entrypoint for flexible startup
-ENTRYPOINT ["/app/entrypoint.sh"]
+ENTRYPOINT ["/app/scripts/entrypoint.sh"]
