@@ -272,54 +272,66 @@ export default function RolesPage() {
                       )}
                     </div>
 
-                    <div className="flex items-center gap-2 pt-2">
-                      <Button
-                        variant="neutral-secondary"
-                        size="small"
-                        onClick={() => handleEditRole(role)}
-                        className="flex-1"
-                      >
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit
-                      </Button>
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="neutral-secondary"
-                            size="small"
-                            className="flex-1"
-                          >
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>
-                              Delete Role: {role.name}
-                            </AlertDialogTitle>
-                            <AlertDialogDescription>
-                              This action cannot be undone. This will
-                              permanently delete the role and remove it from all
-                              users.
-                              {role.users.length > 0 &&
-                                ` This role is currently assigned to ${role.users.length} user(s).`}
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() =>
-                                handleDeleteRole(role.id, role.name)
-                              }
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    {/* Actions - Hide for system roles */}
+                    {role.name !== "ADMIN" && role.name !== "USER" ? (
+                      <div className="flex items-center gap-2 pt-2">
+                        <Button
+                          variant="neutral-secondary"
+                          size="small"
+                          onClick={() => handleEditRole(role)}
+                          className="flex-1"
+                        >
+                          <Edit className="mr-2 h-4 w-4" />
+                          Edit
+                        </Button>
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              variant="neutral-secondary"
+                              size="small"
+                              className="flex-1"
                             >
+                              <Trash2 className="mr-2 h-4 w-4" />
                               Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>
+                                Delete Role: {role.name}
+                              </AlertDialogTitle>
+                              <AlertDialogDescription>
+                                This action cannot be undone. This will
+                                permanently delete the role and remove it from
+                                all users.
+                                {role.users.length > 0 &&
+                                  ` This role is currently assigned to ${role.users.length} user(s).`}
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Cancel</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() =>
+                                  handleDeleteRole(role.id, role.name)
+                                }
+                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                              >
+                                Delete
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    ) : (
+                      <div className="pt-2">
+                        <div className="bg-muted rounded-md p-2">
+                          <p className="text-muted-foreground flex items-center text-sm">
+                            <Shield className="mr-2 h-4 w-4" />
+                            System role (protected)
+                          </p>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
