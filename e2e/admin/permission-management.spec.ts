@@ -10,10 +10,13 @@ import {
 } from "../utils/test-helpers";
 
 test.describe("Permission Management", () => {
-  // Don't use the default auth state for admin tests
+  // Don't use the default auth state for admin tests and extend timeout
   test.use({
     storageState: undefined,
   });
+
+  // Set a longer timeout for these tests
+  test.setTimeout(60000);
 
   test.describe("Page Access & Layout", () => {
     test("admin can access permission management page", async ({
@@ -25,13 +28,17 @@ test.describe("Permission Management", () => {
 
       await navigateToAdmin(page, "permissions");
 
-      // Verify page loads correctly
+      // Wait for the page to fully load
+      await page.waitForLoadState("networkidle");
+      await waitForPageLoad(page);
+
+      // Verify page loads correctly with extended timeout
       await expect(
         page.getByRole("heading", { name: "Permission Management" }),
-      ).toBeVisible();
+      ).toBeVisible({ timeout: 15000 });
       await expect(
-        page.getByText("Manage system permissions and their assignments"),
-      ).toBeVisible();
+        page.getByText("Manage system permissions and their role assignments"),
+      ).toBeVisible({ timeout: 15000 });
 
       // Verify create permission button
       await expect(

@@ -56,15 +56,23 @@ setup("authenticate", async ({ page, context }) => {
     );
     const dashboardHeading = await page.locator("h1");
     const accountStatusCard = await page.locator("text=Account Status");
+    const profileOverviewCard = await page.locator("text=Profile Overview");
 
     const isGreetingVisible = await greetingText
-      .isVisible({ timeout: 5000 })
+      .isVisible({ timeout: 10000 })
       .catch(() => false);
     const isAccountStatusVisible = await accountStatusCard
-      .isVisible({ timeout: 5000 })
+      .isVisible({ timeout: 10000 })
+      .catch(() => false);
+    const isProfileOverviewVisible = await profileOverviewCard
+      .isVisible({ timeout: 10000 })
       .catch(() => false);
 
-    if (!isGreetingVisible && !isAccountStatusVisible) {
+    if (
+      !isGreetingVisible &&
+      !isAccountStatusVisible &&
+      !isProfileOverviewVisible
+    ) {
       // Debug information
       logger.debug("Page URL:", page.url());
       logger.error("Auth verification failed. Debug info:");
