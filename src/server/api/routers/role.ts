@@ -114,6 +114,11 @@ export const roleRouter = createTRPCRouter({
         throw new Error("Role not found");
       }
 
+      // Prevent editing system roles
+      if (existingRole.name === "ADMIN" || existingRole.name === "USER") {
+        throw new Error("Cannot edit system roles");
+      }
+
       // Check if new name conflicts with another role
       const conflictingRole = await ctx.db.role.findFirst({
         where: {
@@ -158,9 +163,9 @@ export const roleRouter = createTRPCRouter({
         throw new Error("Role not found");
       }
 
-      // Prevent deletion of ADMIN role
-      if (role.name === "ADMIN") {
-        throw new Error("Cannot delete the ADMIN role");
+      // Prevent deletion of system roles
+      if (role.name === "ADMIN" || role.name === "USER") {
+        throw new Error("Cannot delete system roles");
       }
 
       // Check if role is assigned to any users

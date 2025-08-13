@@ -45,8 +45,21 @@ export default defineConfig({
     // Setup project
     { name: "setup", testMatch: /.*\.setup\.ts/ },
 
+    // Starter project - no auth required
+    {
+      name: "starter",
+      testMatch: /.*starter\.spec\.ts/,
+      use: {
+        ...devices["Desktop Chrome"],
+        // No storage state - no authentication required
+        storageState: undefined,
+      },
+    },
+
     {
       name: "chromium",
+      testMatch: /.*\.spec\.ts/,
+      testIgnore: /.*starter\.spec\.ts/,
       use: {
         ...devices["Desktop Chrome"],
         // Use prepared auth state.
