@@ -27,7 +27,7 @@ export default defineConfig({
       ]
     : [
         ["list"],
-        ["html", { open: "on-failure", outputFolder: "playwright-report" }],
+        ["html", { open: "never", outputFolder: "playwright-report" }], // Changed to never auto-open
         ["json", { outputFile: "test-results/results.json" }],
       ], // Local: detailed reporting with JSON
 

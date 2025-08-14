@@ -36,6 +36,9 @@ const isTestMode =
   process.env.ENABLE_TEST_AUTH === "true";
 
 export const authConfig = {
+  session: {
+    strategy: isTestMode ? "jwt" : "database", // Use JWT for test mode (credentials)
+  },
   providers: [
     DiscordProvider,
     // Add test-only credentials provider
@@ -186,7 +189,31 @@ export const authConfig = {
       // after the user is properly created in the database
       return true;
     },
-    session: async ({ session, user }) => {
+    async jwt({ token, user }) {
+      // For JWT sessions (credentials provider), include user ID and roles in the token
+      if (user) {
+        token.id = user.id;
+
+        // Load roles from database
+        const userRoles = await db.userRole.findMany({
+          where: { userId: user.id },
+          include: { role: true },
+        });
+
+        token.roles = userRoles.map((ur) => ur.role.name);
+      }
+      return token;
+    },
+    session: async ({ session, user, token }) => {
+      // Handle both database sessions (OAuth) and JWT sessions (credentials)
+      if (token) {
+        // JWT session (credentials provider)
+        session.user.id = token.id as string;
+        session.user.roles = token.roles as string[];
+        return session;
+      }
+
+      // Database session (OAuth providers)
       // Debug logging for E2E tests
       if (isTestMode && config.test.verboseLogs) {
         console.log(`🔍 Session callback for user: ${user.id} (${user.email})`);
