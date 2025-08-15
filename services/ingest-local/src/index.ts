@@ -3,6 +3,35 @@ import { SQSClient, SendMessageCommand } from "@aws-sdk/client-sqs";
 
 const app = express();
 
+// Input validation and payload processing
+function validateWebhookPayload(
+  body: string,
+  maxSizeMB = 2,
+): {
+  valid: boolean;
+  error?: string;
+} {
+  // Check size limit
+  const sizeInMB = Buffer.byteLength(body, "utf8") / (1024 * 1024);
+  if (sizeInMB > maxSizeMB) {
+    return {
+      valid: false,
+      error: `Payload size ${sizeInMB.toFixed(2)}MB exceeds limit of ${maxSizeMB}MB`,
+    };
+  }
+
+  // For webhooks, body can be JSON or raw string, so we'll be more permissive
+  // Only reject obviously invalid payloads
+  if (body.length === 0) {
+    return {
+      valid: false,
+      error: "Empty payload not allowed",
+    };
+  }
+
+  return { valid: true };
+}
+
 // Use the verify option to capture raw body during JSON parsing
 app.use(
   express.json({
@@ -12,6 +41,17 @@ app.use(
     },
   }),
 );
+
+// Handle JSON parsing errors
+app.use((error: any, req: any, res: any, next: any) => {
+  if (error instanceof SyntaxError && "body" in error) {
+    res.status(400).json({
+      error: "Invalid JSON payload",
+      message: "Request body contains malformed JSON",
+    });
+  }
+  next(error);
+});
 
 const port = Number(process.env.PORT || 3000);
 const sqsUrl = process.env.SQS_URL!;
@@ -33,6 +73,24 @@ app.get("/healthz", (_req: Request, res: Response) =>
 app.post("/ingest/:endpointId", async (req: Request, res: Response) => {
   try {
     const rawBody = (req as any).rawBody || JSON.stringify(req.body ?? {});
+
+    // Validate webhook payload
+    const validation = validateWebhookPayload(rawBody);
+    if (!validation.valid) {
+      return res.status(400).json({
+        error: "Invalid payload",
+        message: validation.error,
+      });
+    }
+
+    // Validate endpoint ID
+    if (!req.params.endpointId || req.params.endpointId.length === 0) {
+      return res.status(400).json({
+        error: "Invalid endpoint ID",
+        message: "Endpoint ID is required",
+      });
+    }
+
     const payload = {
       endpoint_id: req.params.endpointId,
       raw_body: rawBody,

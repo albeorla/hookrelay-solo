@@ -45,7 +45,7 @@ const s3 = new S3Client({
 
 const endpointsTable = process.env.ENDPOINTS_TABLE!;
 const idempotencyTable = process.env.IDEMPOTENCY_TABLE!;
-const deliveriesTable = process.env.DELIVERIES_TABLE!;
+// const deliveriesTable = process.env.DELIVERIES_TABLE!;
 const dlqBucket = process.env.DLQ_BUCKET!;
 const baseDelay = Number(process.env.RETRY_BASE_SECONDS || 2);
 const maxAttempts = Number(process.env.RETRY_MAX_ATTEMPTS || 6);
@@ -67,29 +67,49 @@ function parseStripeSig(sig: string | undefined) {
   return { t: parts.t, v1: parts.v1 };
 }
 
-function hmacSha256Hex(secret: string, data: string) {
-  return crypto.createHmac("sha256", secret).update(data).digest("hex");
-}
-
+// Import secure HMAC verification functions
 async function verifySignature(
   mode: string | undefined,
   secret: string | undefined,
   body: string,
   headers: Record<string, string | undefined> = {},
 ) {
-  if (!mode || !secret) return true; // permissive for dev
+  // Security: Only allow bypassing HMAC verification in development mode with explicit env var
+  if (!mode || !secret) {
+    if (
+      process.env.NODE_ENV === "development" &&
+      process.env.DISABLE_HMAC_VERIFICATION === "true"
+    ) {
+      console.warn("⚠️  HMAC verification disabled in development mode");
+      return true;
+    }
+    console.error("🚨 Missing HMAC configuration", {
+      mode: !!mode,
+      secret: !!secret,
+    });
+    return false;
+  }
+
   switch (mode) {
     case "stripe": {
       const sig = parseStripeSig(headers.stripe_signature);
       if (!sig) return false;
       const payload = `t=${sig.t}.${body}`;
       const expected = hmacSha256Hex(secret, payload);
+
+      // Ensure both signatures are the same length for timing-safe comparison
+      if (expected.length !== sig.v1.length) return false;
+
       return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig.v1));
     }
     case "github": {
       const sig = headers.x_hub_sig_256?.replace(/^sha256=/, "");
       if (!sig) return false;
       const expected = hmacSha256Hex(secret, body);
+
+      // Ensure both signatures are the same length for timing-safe comparison
+      if (expected.length !== sig.length) return false;
+
       return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig));
     }
     case "generic": {
@@ -98,11 +118,19 @@ async function verifySignature(
       if (!sig) return false;
       const payload = ts ? `${ts}.${body}` : body;
       const expected = hmacSha256Hex(secret, payload);
+
+      // Ensure both signatures are the same length for timing-safe comparison
+      if (expected.length !== sig.length) return false;
+
       return crypto.timingSafeEqual(Buffer.from(expected), Buffer.from(sig));
     }
     default:
       return false;
   }
+}
+
+function hmacSha256Hex(secret: string, data: string) {
+  return crypto.createHmac("sha256", secret).update(data).digest("hex");
 }
 
 async function isIdempotent(
