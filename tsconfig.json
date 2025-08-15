@@ -53,11 +53,18 @@
     "node_modules",
     "playwright-report/**/*",
     "test-results/**/*",
+    "coverage/**/*",
+    "html/**/*",
+    ".next/**/*",
+    "dist/**/*",
+    "build/**/*",
     "services/**",
     "aws/**",
     "services/**/dist/**",
     "src/**/__tests__/**",
     "src/**/*.test.*",
-    "src/**/*.spec.*"
+    "src/**/*.spec.*",
+    "*.log",
+    "**/*.log"
   ]
 }

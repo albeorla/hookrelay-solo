@@ -1,0 +1,29 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Debug Next.js Dev Server",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["next", "dev"],
+      "console": "integratedTerminal",
+      "env": {
+        "NODE_OPTIONS": "--inspect"
+      },
+      "skipFiles": ["<node_internals>/**"]
+    },
+    {
+      "name": "Debug Next.js Build",
+      "type": "node",
+      "request": "launch",
+      "runtimeExecutable": "yarn",
+      "runtimeArgs": ["next", "start"],
+      "console": "integratedTerminal",
+      "env": {
+        "NODE_OPTIONS": "--inspect"
+      },
+      "skipFiles": ["<node_internals>/**"]
+    }
+  ]
+}

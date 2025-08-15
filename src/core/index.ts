@@ -70,16 +70,95 @@ export {
 } from "./trpc-integration";
 export type { ModuleRouterAccess } from "./trpc-integration";
 
+// Integration Framework - Story 2 Components
+
+// Dependency Injection Container
+export {
+  Container,
+  ServiceLifetime,
+  globalContainer,
+  ContainerBuilder,
+  Injectable,
+  Inject,
+} from "./container";
+export type {
+  ServiceToken,
+  ServiceFactory,
+  ServiceConstructor,
+  ServiceRegistration,
+  ContainerScope,
+} from "./container";
+
+// Event Bus System
+export { EventBus, globalEventBus, TypedEventBus } from "./event-bus";
+export type {
+  EventHandler,
+  EventPayload,
+  EventSubscription,
+  SubscriptionOptions,
+  EventBusStatistics,
+  EventMiddleware,
+} from "./event-bus";
+
+// Middleware Chain System
+export {
+  MiddlewareChain,
+  BaseMiddlewareHandler,
+  LoggingMiddleware,
+  PerformanceMiddleware,
+  AuthenticationMiddleware,
+  globalMiddlewareChain,
+} from "./middleware-chain";
+export type {
+  RequestContext,
+  MiddlewareResult,
+  MiddlewareHandler,
+  MiddlewareChainConfig,
+  MiddlewareChainStatistics,
+} from "./middleware-chain";
+
+// Security Boundaries
+export {
+  SecurityManager,
+  globalSecurityManager,
+  ResourceType,
+  PermissionLevel,
+} from "./security";
+export type {
+  SecurityContext,
+  SecurityConstraints,
+  RateLimitRule,
+  ResourceAccessRequest,
+  ResourceAccessResult,
+  AuditLogEntry,
+  SecurityPolicy,
+} from "./security";
+
 /**
- * Initialize the core module system
+ * Initialize the core module system with integration framework
  *
- * This function sets up the module system with default configuration.
- * Call this during application startup to initialize the registry,
- * lifecycle manager, and health monitor.
+ * This function sets up the complete module system including the new
+ * integration framework components (Story 2). Call this during
+ * application startup to initialize all module system components.
  *
- * @returns Object containing initialized components
+ * @returns Object containing all initialized components
  */
-export async function initializeModuleSystem() {
+export async function initializeModuleSystem(
+  options: {
+    enableContainer?: boolean;
+    enableEventBus?: boolean;
+    enableMiddleware?: boolean;
+    enableSecurity?: boolean;
+  } = {},
+) {
+  const {
+    enableContainer = true,
+    enableEventBus = true,
+    enableMiddleware = true,
+    enableSecurity = true,
+  } = options;
+
+  // Core module system
   const { ModuleRegistry } = await import("./module-registry");
   const { LifecycleManager } = await import("./lifecycle-manager");
   const { HealthMonitor } = await import("./health-monitor");
@@ -90,11 +169,40 @@ export async function initializeModuleSystem() {
   const healthMonitor = new HealthMonitor(registry);
   const trpcIntegration = new ModuleTRPCIntegration(registry);
 
+  // Integration framework components
+  let container, eventBus, middlewareChain, securityManager;
+
+  if (enableContainer) {
+    const { globalContainer } = await import("./container");
+    container = globalContainer;
+  }
+
+  if (enableEventBus) {
+    const { globalEventBus } = await import("./event-bus");
+    eventBus = globalEventBus;
+  }
+
+  if (enableMiddleware) {
+    const { globalMiddlewareChain } = await import("./middleware-chain");
+    middlewareChain = globalMiddlewareChain;
+  }
+
+  if (enableSecurity) {
+    const { globalSecurityManager } = await import("./security");
+    securityManager = globalSecurityManager;
+  }
+
   return {
+    // Core components
     registry,
     lifecycleManager,
     healthMonitor,
     trpcIntegration,
+    // Integration framework
+    container,
+    eventBus,
+    middlewareChain,
+    securityManager,
   } as const;
 }
 
