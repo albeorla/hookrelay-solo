@@ -22,18 +22,19 @@ Each module follows strict architectural patterns ensuring loose coupling, high 
 
 ### Development
 ```bash
-yarn dev              # Start development server (port 3000)
+yarn dev              # Start development server with Turbo (port 3000)
 yarn dev:test         # Start test server (port 3001) for E2E tests
 ```
 
 ### Code Quality
 ```bash
-yarn typecheck        # Run TypeScript type checking
+yarn typecheck        # Run TypeScript type checking (all files)
+yarn typecheck:app    # Run TypeScript type checking (app files only)
 yarn lint             # Run ESLint
 yarn lint:fix         # Fix linting issues automatically
 yarn format:check     # Check code formatting
 yarn format:write     # Format code with Prettier
-yarn ci               # Run all checks (typecheck, lint, format, E2E tests)
+yarn ci               # Run all checks (typecheck:app, lint, format:check, test:unit, test:e2e:ci)
 ```
 
 ### Database
@@ -46,21 +47,28 @@ yarn db:studio        # Open Prisma Studio GUI
 
 ### Testing
 ```bash
+# Unit Tests
+yarn test:unit        # Run Jest unit tests
+yarn test:unit:watch  # Run unit tests in watch mode
+yarn test:unit:coverage # Run unit tests with coverage report
+
+# E2E Tests
 yarn test:e2e         # Run Playwright E2E tests
 yarn test:e2e:ui      # Run tests with UI mode
 yarn test:e2e:headed  # Run tests in headed browser
 yarn test:e2e:ci      # Run tests in CI mode (optimized, minimal output)
 yarn test:e2e:docker  # Run tests in Docker with bundled PostgreSQL
 
-# Logging Control (NEW)
+# E2E Logging Control
 yarn test:e2e:silent  # Run tests with no output (LOG_LEVEL=SILENT)
 yarn test:e2e:debug   # Run tests with debug logging (LOG_LEVEL=DEBUG)
 yarn test:e2e:verbose # Run tests with verbose logging (LOG_LEVEL=VERBOSE)
 
-# Test Filtering
+# E2E Test Filtering
 yarn test:e2e:quick   # Run tests excluding @slow tagged tests
 yarn test:e2e:slow    # Run only @slow tagged tests
 yarn test:e2e:coverage # Run tests with HTML and JUnit reports
+yarn test:e2e:performance # Run tests with JSON performance report
 ```
 
 ### Build & Production
@@ -73,8 +81,10 @@ yarn preview          # Build and start production server
 ### Docker Commands
 ```bash
 yarn test:e2e:docker  # Run E2E tests in Docker with PostgreSQL
+yarn docker:up        # Start Docker services in background
+yarn docker:down      # Stop and remove Docker services
 docker compose up --build --exit-code-from e2e e2e  # Manual Docker test run
-docker compose up  # Development with hot reload
+docker compose up     # Development with hot reload
 ```
 
 ## High-Level Architecture

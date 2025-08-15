@@ -38,6 +38,8 @@
     "test:e2e:performance": "dotenv -e .env.test -- playwright test --reporter=json",
     "test:e2e:quick": "dotenv -e .env.test -- playwright test --grep-invert='@slow'",
     "test:e2e:slow": "dotenv -e .env.test -- playwright test --grep='@slow'",
+    "docker:up": "docker compose up -d",
+    "docker:down": "docker compose down",
     "coverage:merge": "mkdir -p coverage && echo 'Coverage merging placeholder'",
     "coverage:report": "echo 'Coverage report placeholder'"
   },
