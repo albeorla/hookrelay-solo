@@ -24,6 +24,8 @@ interface WebSocketContextType {
   subscribeToSystemAlerts: (
     handler: (message: WebSocketMessage) => void,
   ) => () => void;
+  enableRealTimeUpdates: () => void;
+  disableRealTimeUpdates: () => void;
   deliveryStats: {
     recentUpdates: DeliveryUpdateMessage[];
     totalUpdates: number;
@@ -46,8 +48,11 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     connectionState,
     subscribe,
     subscribeToDeliveryUpdates: wsSubscribeToDeliveryUpdates,
+    connect,
+    disconnect,
   } = useServerSentEvents({
     debug: process.env.NODE_ENV === "development",
+    autoConnect: false, // Don't auto-connect
     onConnect: () => {
       if (session?.user?.roles?.includes("ADMIN")) {
         toast.success("Real-time updates connected", {
@@ -116,11 +121,23 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     [subscribe],
   );
 
+  const enableRealTimeUpdates = useCallback(() => {
+    if (session?.user?.roles?.includes("ADMIN")) {
+      connect();
+    }
+  }, [session, connect]);
+
+  const disableRealTimeUpdates = useCallback(() => {
+    disconnect();
+  }, [disconnect]);
+
   const contextValue: WebSocketContextType = {
     isConnected,
     connectionState,
     subscribeToDeliveryUpdates,
     subscribeToSystemAlerts,
+    enableRealTimeUpdates,
+    disableRealTimeUpdates,
     deliveryStats,
   };
 

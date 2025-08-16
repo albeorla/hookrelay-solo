@@ -37,10 +37,13 @@ const isTestMode =
 
 export const authConfig = {
   session: {
-    strategy: isTestMode ? "jwt" : "database", // Use JWT for test mode (credentials)
+    strategy: "database" as const,
   },
   providers: [
-    DiscordProvider,
+    DiscordProvider({
+      clientId: config.auth.discord.id ?? "",
+      clientSecret: config.auth.discord.secret ?? "",
+    }),
     // Add test-only credentials provider
     ...(isTestMode
       ? [

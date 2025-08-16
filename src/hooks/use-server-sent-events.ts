@@ -28,6 +28,7 @@ export interface SSEOptions {
   reconnectInterval?: number;
   maxReconnectAttempts?: number;
   debug?: boolean;
+  autoConnect?: boolean;
   onConnect?: () => void;
   onDisconnect?: () => void;
   onError?: (error: Event) => void;
@@ -39,6 +40,7 @@ export function useServerSentEvents(options: SSEOptions = {}) {
     reconnectInterval = 3000,
     maxReconnectAttempts = 10,
     debug = false,
+    autoConnect = false,
     onConnect,
     onDisconnect,
     onError,
@@ -175,14 +177,16 @@ export function useServerSentEvents(options: SSEOptions = {}) {
     [log],
   );
 
-  // Connect on mount
+  // Connect on mount only if autoConnect is true
   useEffect(() => {
-    connect();
+    if (autoConnect) {
+      connect();
+    }
 
     return () => {
       disconnect();
     };
-  }, [connect, disconnect]);
+  }, [autoConnect, connect, disconnect]);
 
   // Cleanup on unmount
   useEffect(() => {

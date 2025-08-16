@@ -3,9 +3,7 @@ import { cache } from "react";
 import { authConfig } from "./config";
 
 const isTestEnv =
-  process.env.NODE_ENV === "test" ||
-  process.env.VITEST === "true" ||
-  process.env.ENABLE_TEST_AUTH === "true";
+  process.env.NODE_ENV === "test" || process.env.VITEST === "true";
 
 let auth: ReturnType<typeof NextAuth>["auth"];
 let handlers: ReturnType<typeof NextAuth>["handlers"];

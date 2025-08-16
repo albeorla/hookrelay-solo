@@ -7,9 +7,14 @@ const activeConnections = new Set<
   ReadableStreamDefaultController<Uint8Array>
 >();
 
+// Global interval reference to manage simulation
+let simulationInterval: NodeJS.Timeout | null = null;
+
 // Simulated webhook delivery updates (in production, this would come from your webhook processing service)
-const simulateDeliveryUpdates = () => {
-  setInterval(
+const startSimulation = () => {
+  if (simulationInterval) return; // Already running
+
+  simulationInterval = setInterval(
     () => {
       if (activeConnections.size > 0) {
         const statuses = ["success", "failed", "pending", "retrying"] as const;
@@ -34,16 +39,21 @@ const simulateDeliveryUpdates = () => {
         };
 
         broadcastUpdate(update);
+      } else {
+        // No active connections, stop simulation
+        stopSimulation();
       }
     },
-    3000 + Math.random() * 7000,
-  ); // Random interval between 3-10 seconds
+    5000 + Math.random() * 5000,
+  ); // Random interval between 5-10 seconds
 };
 
-// Start the simulator (in production, this would be triggered by actual webhook events)
-if (process.env.NODE_ENV === "development") {
-  simulateDeliveryUpdates();
-}
+const stopSimulation = () => {
+  if (simulationInterval) {
+    clearInterval(simulationInterval);
+    simulationInterval = null;
+  }
+};
 
 function broadcastUpdate(update: unknown) {
   const data = `data: ${JSON.stringify(update)}\n\n`;
@@ -58,6 +68,11 @@ function broadcastUpdate(update: unknown) {
       // Remove disconnected clients
       activeConnections.delete(controller);
     }
+  }
+
+  // Stop simulation if no connections remain
+  if (activeConnections.size === 0) {
+    stopSimulation();
   }
 }
 
@@ -94,6 +109,14 @@ export async function GET(request: NextRequest) {
       // Add this connection to active connections
       activeConnections.add(controller);
 
+      // Start simulation if in development mode and this is the first connection
+      if (
+        process.env.NODE_ENV === "development" &&
+        activeConnections.size === 1
+      ) {
+        startSimulation();
+      }
+
       // Send initial connection message
       const welcomeMessage = {
         type: "connection",
@@ -119,6 +142,11 @@ export async function GET(request: NextRequest) {
         } catch {
           clearInterval(heartbeatInterval);
           activeConnections.delete(controller);
+
+          // Stop simulation if no connections remain
+          if (activeConnections.size === 0) {
+            stopSimulation();
+          }
         }
       }, 30000); // Every 30 seconds
 
@@ -127,6 +155,11 @@ export async function GET(request: NextRequest) {
         clearInterval(heartbeatInterval);
         activeConnections.delete(controller);
         controller.close();
+
+        // Stop simulation if no connections remain
+        if (activeConnections.size === 0) {
+          stopSimulation();
+        }
       });
     },
     cancel() {
