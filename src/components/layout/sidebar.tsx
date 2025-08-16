@@ -31,6 +31,12 @@ import { cn } from "~/lib/utils";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: Home },
+  {
+    href: "/admin/webhooks",
+    label: "Webhooks",
+    icon: Webhook,
+    admin: true,
+  },
   { href: "/admin/users", label: "Users", icon: Users, admin: true },
   {
     href: "/admin/roles",
@@ -42,12 +48,6 @@ const navItems = [
     href: "/admin/permissions",
     label: "Permissions",
     icon: ShieldCheck,
-    admin: true,
-  },
-  {
-    href: "/admin/webhooks",
-    label: "Webhooks",
-    icon: Webhook,
     admin: true,
   },
   { href: "/settings/profile", label: "Settings", icon: Settings },
@@ -147,7 +147,7 @@ export function Sidebar({
       )}
     >
       <div className="flex h-16 items-center justify-between border-b px-4">
-        {open && <h1 className="text-lg font-bold">My App</h1>}
+        {open && <h1 className="text-lg font-bold">Solo 🏔️</h1>}
         <Button variant="ghost" size="icon" onClick={() => onOpenChange(!open)}>
           <Menu className="h-5 w-5" />
         </Button>
@@ -170,7 +170,7 @@ export function MobileNav() {
         </SheetTrigger>
         <SheetContent side="left" className="w-64 p-4">
           <SheetHeader>
-            <SheetTitle>My App</SheetTitle>
+            <SheetTitle>Solo 🏔️</SheetTitle>
           </SheetHeader>
           <NavContent open={true} />
         </SheetContent>

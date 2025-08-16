@@ -24,6 +24,12 @@ import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 
 const navItems = [
   { href: "/", label: "Dashboard", icon: Home },
+  {
+    href: "/admin/webhooks",
+    label: "Webhooks",
+    icon: Webhook,
+    admin: true,
+  },
   { href: "/admin/users", label: "Users", icon: Users, admin: true },
   {
     href: "/admin/roles",
@@ -35,12 +41,6 @@ const navItems = [
     href: "/admin/permissions",
     label: "Permissions",
     icon: ShieldCheck,
-    admin: true,
-  },
-  {
-    href: "/admin/webhooks",
-    label: "Webhooks",
-    icon: Webhook,
     admin: true,
   },
   { href: "/settings/profile", label: "Settings", icon: Settings },
@@ -121,7 +121,7 @@ export function MobileNav() {
         </SheetTrigger>
         <SheetContent side="left" className="flex w-64 flex-col p-4">
           <SheetHeader>
-            <SheetTitle>My App</SheetTitle>
+            <SheetTitle>Solo 🏔️</SheetTitle>
           </SheetHeader>
           <div className="flex-1 py-4">
             <NavContent />
