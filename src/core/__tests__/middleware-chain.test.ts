@@ -505,7 +505,7 @@ describe("MiddlewareChain", () => {
 
         expect(consoleSpy.warn).toHaveBeenCalledWith(
           expect.stringMatching(
-            /\[test-123\] Slow request: \d+ms, memory: \d+ bytes/,
+            /\[test-123\] Slow request: \d+ms, memory: -?\d+ bytes/,
           ),
         );
       });

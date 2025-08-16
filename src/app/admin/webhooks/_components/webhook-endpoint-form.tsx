@@ -153,7 +153,6 @@ export function WebhookEndpointForm({ onSuccess }: WebhookEndpointFormProps) {
                   </SelectTrigger>
                 </FormControl>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
                   <SelectItem value="stripe">Stripe</SelectItem>
                   <SelectItem value="github">GitHub</SelectItem>
                   <SelectItem value="generic">Generic</SelectItem>

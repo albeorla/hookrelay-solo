@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { toast } from "sonner";
 import {
   Webhook,
@@ -33,6 +34,7 @@ import { Separator } from "~/components/ui/separator";
 import { AuthenticatedLayout } from "~/components/layout/authenticated-layout";
 import { api } from "~/trpc/react";
 import { WebhookEndpointForm } from "./_components/webhook-endpoint-form";
+import { WebhookErrorBoundary } from "~/components/error-boundary";
 
 export default function WebhooksPage() {
   const { data: session } = useSession();
@@ -130,218 +132,247 @@ export default function WebhooksPage() {
 
   return (
     <AuthenticatedLayout>
-      <div className="container mx-auto py-12">
-        <header className="mb-8 text-center">
-          <h1 className="text-4xl font-bold tracking-tight">
-            Webhook Management
-          </h1>
-          <p className="text-muted-foreground mt-2">
-            Monitor and manage webhook endpoints with real-time observability
-          </p>
-          <Dialog
-            open={isCreateDialogOpen}
-            onOpenChange={setIsCreateDialogOpen}
-          >
-            <DialogTrigger asChild>
-              <Button size="lg" className="mt-6">
-                <Plus className="mr-2 h-5 w-5" />
-                Add Endpoint
+      <WebhookErrorBoundary>
+        <div className="container mx-auto py-12">
+          <header className="mb-8 text-center">
+            <h1 className="text-4xl font-bold tracking-tight">
+              Webhook Management
+            </h1>
+            <p className="text-muted-foreground mt-2">
+              Monitor and manage webhook endpoints with real-time observability
+            </p>
+            <div className="mt-6 flex items-center justify-center gap-4">
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/admin/webhooks/dashboard">
+                  <BarChart3 className="mr-2 h-5 w-5" />
+                  View Dashboard
+                </Link>
               </Button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Create Webhook Endpoint</DialogTitle>
-                <DialogDescription>
-                  Add a new webhook endpoint for receiving and processing
-                  webhooks
-                </DialogDescription>
-              </DialogHeader>
-              <div className="py-4">
-                <WebhookEndpointForm
-                  onSuccess={() => {
-                    setIsCreateDialogOpen(false);
-                    void refetchEndpoints();
-                  }}
-                />
-              </div>
-            </DialogContent>
-          </Dialog>
-        </header>
-
-        <Separator className="mb-8" />
-
-        {statsData && (
-          <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Total Deliveries
-                </CardTitle>
-                <BarChart3 className="text-muted-foreground h-4 w-4" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {statsData.totalDeliveries}
-                </div>
-                <p className="text-muted-foreground text-xs">
-                  {statsData.successRate}% success rate
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Active Endpoints
-                </CardTitle>
-                <Activity className="text-muted-foreground h-4 w-4" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">{endpointsList.length}</div>
-                <p className="text-muted-foreground text-xs">
-                  {endpointsList.filter((e) => e.isActive).length} enabled
-                </p>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between pb-2">
-                <CardTitle className="text-sm font-medium">
-                  Recent Activity
-                </CardTitle>
-                <Zap className="text-muted-foreground h-4 w-4" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {recentDeliveries?.length ?? 0}
-                </div>
-                <p className="text-muted-foreground text-xs">
-                  deliveries in the last hour
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {endpointsList.map((endpoint: EndpointUI) => (
-            <Card key={endpoint.id} className="flex flex-col">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    <Webhook className="text-muted-foreground h-6 w-6" />
-                    <div>
-                      <CardTitle>
-                        {endpoint.name ?? "Unnamed Endpoint"}
-                      </CardTitle>
-                      <Badge
-                        variant={endpoint.isActive ? "default" : "outline"}
-                        className="mt-1"
-                      >
-                        {endpoint.isActive ? "Active" : "Inactive"}
-                      </Badge>
-                    </div>
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/admin/webhooks/dlq">Dead Letter Queue</Link>
+              </Button>
+              <Button size="lg" variant="outline" asChild>
+                <Link href="/admin/webhooks/settings">
+                  <Settings className="mr-2 h-5 w-5" />
+                  Settings
+                </Link>
+              </Button>
+              <Dialog
+                open={isCreateDialogOpen}
+                onOpenChange={setIsCreateDialogOpen}
+              >
+                <DialogTrigger asChild>
+                  <Button size="lg">
+                    <Plus className="mr-2 h-5 w-5" />
+                    Add Endpoint
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Create Webhook Endpoint</DialogTitle>
+                    <DialogDescription>
+                      Add a new webhook endpoint for receiving and processing
+                      webhooks
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className="py-4">
+                    <WebhookEndpointForm
+                      onSuccess={() => {
+                        setIsCreateDialogOpen(false);
+                        void refetchEndpoints();
+                      }}
+                    />
                   </div>
-                  <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                    <Settings className="h-4 w-4" />
-                    <span>{endpoint.deliveryCount ?? 0} deliveries</span>
+                </DialogContent>
+              </Dialog>
+            </div>
+          </header>
+
+          <Separator className="mb-8" />
+
+          {statsData && (
+            <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Total Deliveries
+                  </CardTitle>
+                  <BarChart3 className="text-muted-foreground h-4 w-4" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {statsData.totalDeliveries}
                   </div>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-grow space-y-4">
-                <div>
-                  <h4 className="mb-2 font-semibold">Endpoint URL</h4>
-                  <p className="text-muted-foreground font-mono text-sm break-all">
-                    {endpoint.url}
+                  <p className="text-muted-foreground text-xs">
+                    {statsData.successRate}% success rate
                   </p>
-                </div>
-                <div>
-                  <h4 className="mb-2 font-semibold">Configuration</h4>
-                  <div className="space-y-1 text-sm">
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Method:</span>
-                      <span>{endpoint.method ?? "POST"}</span>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Active Endpoints
+                  </CardTitle>
+                  <Activity className="text-muted-foreground h-4 w-4" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {endpointsList.length}
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    {endpointsList.filter((e) => e.isActive).length} enabled
+                  </p>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <CardTitle className="text-sm font-medium">
+                    Recent Activity
+                  </CardTitle>
+                  <Zap className="text-muted-foreground h-4 w-4" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">
+                    {recentDeliveries?.length ?? 0}
+                  </div>
+                  <p className="text-muted-foreground text-xs">
+                    deliveries in the last hour
+                  </p>
+                </CardContent>
+              </Card>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {endpointsList.map((endpoint: EndpointUI) => (
+              <Card key={endpoint.id} className="flex flex-col">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                      <Webhook className="text-muted-foreground h-6 w-6" />
+                      <div>
+                        <CardTitle>
+                          {endpoint.name ?? "Unnamed Endpoint"}
+                        </CardTitle>
+                        <Badge
+                          variant={endpoint.isActive ? "default" : "outline"}
+                          className="mt-1"
+                        >
+                          {endpoint.isActive ? "Active" : "Inactive"}
+                        </Badge>
+                      </div>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Timeout:</span>
-                      <span>{endpoint.timeout ?? 30}s</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-muted-foreground">Retries:</span>
-                      <span>{endpoint.maxRetries ?? 3}</span>
+                    <div className="flex items-center gap-2">
+                      <div className="text-muted-foreground text-sm">
+                        {endpoint.deliveryCount ?? 0} deliveries
+                      </div>
+                      <Button variant="ghost" size="sm" asChild>
+                        <Link href={`/admin/webhooks/${endpoint.id}`}>
+                          <Settings className="h-4 w-4" />
+                        </Link>
+                      </Button>
                     </div>
                   </div>
-                </div>
-                <div>
-                  <h4 className="mb-2 font-semibold">Recent Deliveries</h4>
-                  {deliveriesList &&
-                  deliveriesList.filter(
-                    (d: DeliveryUI) => d.endpointId === endpoint.id,
-                  ).length > 0 ? (
-                    <div className="space-y-2">
-                      {deliveriesList
-                        .filter((d: DeliveryUI) => d.endpointId === endpoint.id)
-                        .slice(0, 3)
-                        .map((delivery: DeliveryUI) => (
-                          <div
-                            key={delivery.id}
-                            className="flex items-center justify-between text-xs"
-                          >
-                            <div className="flex items-center gap-2">
-                              {getStatusIcon(delivery.status)}
-                              <span className="capitalize">
-                                {delivery.status}
+                </CardHeader>
+                <CardContent className="flex-grow space-y-4">
+                  <div>
+                    <h4 className="mb-2 font-semibold">Endpoint URL</h4>
+                    <p className="text-muted-foreground font-mono text-sm break-all">
+                      {endpoint.url}
+                    </p>
+                  </div>
+                  <div>
+                    <h4 className="mb-2 font-semibold">Configuration</h4>
+                    <div className="space-y-1 text-sm">
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Method:</span>
+                        <span>{endpoint.method ?? "POST"}</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Timeout:</span>
+                        <span>{endpoint.timeout ?? 30}s</span>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-muted-foreground">Retries:</span>
+                        <span>{endpoint.maxRetries ?? 3}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="mb-2 font-semibold">Recent Deliveries</h4>
+                    {deliveriesList &&
+                    deliveriesList.filter(
+                      (d: DeliveryUI) => d.endpointId === endpoint.id,
+                    ).length > 0 ? (
+                      <div className="space-y-2">
+                        {deliveriesList
+                          .filter(
+                            (d: DeliveryUI) => d.endpointId === endpoint.id,
+                          )
+                          .slice(0, 3)
+                          .map((delivery: DeliveryUI) => (
+                            <div
+                              key={delivery.id}
+                              className="flex items-center justify-between text-xs"
+                            >
+                              <div className="flex items-center gap-2">
+                                {getStatusIcon(delivery.status)}
+                                <span className="capitalize">
+                                  {delivery.status}
+                                </span>
+                              </div>
+                              <span className="text-muted-foreground">
+                                {formatTimestamp(delivery.timestamp)}
                               </span>
                             </div>
-                            <span className="text-muted-foreground">
-                              {formatTimestamp(delivery.timestamp)}
-                            </span>
-                          </div>
-                        ))}
-                    </div>
-                  ) : (
-                    <p className="text-muted-foreground text-sm italic">
-                      No recent deliveries
-                    </p>
-                  )}
+                          ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-sm italic">
+                        No recent deliveries
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+                <div className="border-t p-4">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open(endpoint.url, "_blank")}
+                      className="flex-1"
+                    >
+                      <ExternalLink className="mr-2 h-4 w-4" />
+                      Test
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteEndpoint(endpoint.id)}
+                      className="flex-1"
+                      color="destructive"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete
+                    </Button>
+                  </div>
                 </div>
-              </CardContent>
-              <div className="border-t p-4">
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => window.open(endpoint.url, "_blank")}
-                    className="flex-1"
-                  >
-                    <ExternalLink className="mr-2 h-4 w-4" />
-                    Test
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleDeleteEndpoint(endpoint.id)}
-                    className="flex-1"
-                    color="destructive"
-                  >
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete
-                  </Button>
-                </div>
-              </div>
-            </Card>
-          ))}
+              </Card>
+            ))}
+          </div>
+
+          <Separator className="my-8" />
+
+          <footer className="text-center">
+            <h3 className="text-2xl font-semibold">Webhook System Overview</h3>
+            <p className="text-muted-foreground mx-auto mt-2 max-w-2xl">
+              This system manages {endpoints?.length ?? 0} webhook endpoints
+              with real-time monitoring, delivery tracking, and comprehensive
+              analytics.
+            </p>
+          </footer>
         </div>
-
-        <Separator className="my-8" />
-
-        <footer className="text-center">
-          <h3 className="text-2xl font-semibold">Webhook System Overview</h3>
-          <p className="text-muted-foreground mx-auto mt-2 max-w-2xl">
-            This system manages {endpoints?.length ?? 0} webhook endpoints with
-            real-time monitoring, delivery tracking, and comprehensive
-            analytics.
-          </p>
-        </footer>
-      </div>
+      </WebhookErrorBoundary>
     </AuthenticatedLayout>
   );
 }

@@ -2,6 +2,7 @@
 
 import { useSession } from "next-auth/react";
 import { AppShell } from "./app-shell";
+import { WebSocketProvider } from "~/contexts/websocket-context";
 
 interface AuthenticatedLayoutProps {
   children: React.ReactNode;
@@ -21,5 +22,9 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
     );
   }
 
-  return <AppShell>{children}</AppShell>;
+  return (
+    <WebSocketProvider>
+      <AppShell>{children}</AppShell>
+    </WebSocketProvider>
+  );
 }
