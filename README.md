@@ -1,4 +1,8 @@
-# T3 Stack + shadcn/ui Starter
+# HookRelay Solo
+
+[![CI/CD Pipeline (Optimized)](https://github.com/albeorla/hookrelay-solo/actions/workflows/ci-optimized.yml/badge.svg)](https://github.com/albeorla/hookrelay-solo/actions/workflows/ci-optimized.yml)
+
+[![Build and Push Images](https://github.com/albeorla/hookrelay-solo/actions/workflows/ecr-build-push.yml/badge.svg)](https://github.com/albeorla/hookrelay-solo/actions/workflows/ecr-build-push.yml)
 
 Modern full-stack TypeScript application with authentication, RBAC, and a complete UI component library.
 
