@@ -1,3 +1,6 @@
+// For more info, see https://github.com/storybookjs/eslint-plugin-storybook#configuration-flat-config-format
+import storybook from "eslint-plugin-storybook";
+
 import { FlatCompat } from "@eslint/eslintrc";
 import tseslint from "typescript-eslint";
 
@@ -17,7 +20,7 @@ export default tseslint.config(
   },
   ...compat.extends("next/core-web-vitals"),
   {
-    files: ["**/*.ts", "**/*.tsx"],
+    files: ["src/**/*.ts", "src/**/*.tsx"],
     extends: [
       ...tseslint.configs.recommended,
       ...tseslint.configs.recommendedTypeChecked,
@@ -60,6 +63,15 @@ export default tseslint.config(
     },
   },
   {
+    // Disable typed linting for Storybook config files to avoid project service errors
+    files: [".storybook/**/*.{ts,tsx}"],
+    languageOptions: {
+      parserOptions: {
+        projectService: false,
+      },
+    },
+  },
+  {
     // Relax strict typed rules in admin/webhooks UI to reduce CI friction
     files: ["src/app/admin/webhooks/**/*.{ts,tsx}"],
     rules: {
@@ -81,7 +93,30 @@ export default tseslint.config(
     languageOptions: {
       parserOptions: {
         projectService: true,
+        allowDefaultProject: true,
       },
     },
   },
+  // Ensure Storybook config files never use the project service (and use untyped rules only)
+  {
+    files: [".storybook/**/*.{ts,tsx}"],
+    languageOptions: {
+      parserOptions: {
+        projectService: false,
+      },
+    },
+    rules: {
+      ...Object.fromEntries(
+        Object.entries(
+          tseslint.configs.recommendedTypeChecked[0].rules ?? {},
+        ).map(([key]) => [key, "off"]),
+      ),
+      ...Object.fromEntries(
+        Object.entries(
+          tseslint.configs.stylisticTypeChecked[0].rules ?? {},
+        ).map(([key]) => [key, "off"]),
+      ),
+    },
+  },
+  storybook.configs["flat/recommended"],
 );

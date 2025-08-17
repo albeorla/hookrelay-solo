@@ -1,23 +1,27 @@
 import { defineConfig } from "vitest/config";
 import { resolve } from "path";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { storybookTest } from "@storybook/addon-vitest/vitest-plugin";
+const dirname =
+  typeof __dirname !== "undefined"
+    ? __dirname
+    : path.dirname(fileURLToPath(import.meta.url));
 
+// More info at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon
 export default defineConfig({
   test: {
     // Test environment
     environment: "node",
-
     // Test file patterns
     include: [
       "src/**/*.{test,spec}.{ts,tsx}",
       "src/**/__tests__/**/*.{ts,tsx}",
     ],
-
     // Exclude patterns
     exclude: ["node_modules", "e2e", "services", "dist", ".next"],
-
     // Global setup
     globals: true,
-
     // Coverage configuration
     coverage: {
       provider: "v8",
@@ -46,17 +50,41 @@ export default defineConfig({
         },
       },
     },
-
     // Timeout configuration
-    testTimeout: 10000, // 10 seconds
+    testTimeout: 10000,
+    // 10 seconds
 
     // Clear mocks between tests
     clearMocks: true,
-
     // Setup files
     setupFiles: ["./vitest.setup.ts"],
+    projects: [
+      {
+        extends: true,
+        plugins: [
+          // The plugin will run tests for the stories defined in your Storybook config
+          // See options at: https://storybook.js.org/docs/next/writing-tests/integrations/vitest-addon#storybooktest
+          storybookTest({
+            configDir: path.join(dirname, ".storybook"),
+          }),
+        ],
+        test: {
+          name: "storybook",
+          browser: {
+            enabled: true,
+            headless: true,
+            provider: "playwright",
+            instances: [
+              {
+                browser: "chromium",
+              },
+            ],
+          },
+          setupFiles: [".storybook/vitest.setup.ts"],
+        },
+      },
+    ],
   },
-
   // Path resolution
   resolve: {
     alias: {

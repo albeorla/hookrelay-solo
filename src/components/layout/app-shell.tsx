@@ -25,12 +25,14 @@ export function AppShell({ children }: AppShellProps) {
       <div
         className={cn(
           "flex flex-1 flex-col",
-          isDesktop && sidebarOpen && "md:pl-64",
-          isDesktop && !sidebarOpen && "md:pl-16",
+          isDesktop && sidebarOpen && "md:pl-[calc(16rem+1rem)]",
+          isDesktop && !sidebarOpen && "md:pl-[calc(4rem+1rem)]",
           !isDesktop && "pb-16", // Space for mobile nav
         )}
       >
-        {children}
+        <div className="mx-auto w-full max-w-7xl py-4 pr-4 pl-4 sm:pr-6 md:py-6 md:pl-0 lg:pr-8">
+          {children}
+        </div>
       </div>
 
       {/* Mobile Navigation */}

@@ -103,8 +103,8 @@ function NavContent({ open }: { open: boolean }) {
         })}
       </div>
       <div className="mt-auto space-y-2">
-        <div className="flex items-center p-2">
-          <Avatar className={cn(open && "mr-3")}>
+        <div className={cn("flex items-center p-2", !open && "justify-center")}>
+          <Avatar className={cn(open && "mr-3", !open && "h-8 w-8")}>
             <AvatarImage src={session?.user.image ?? undefined} />
             <AvatarFallback>
               {getUserInitials(session?.user.name, session?.user.email)}

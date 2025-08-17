@@ -4,7 +4,7 @@
  * This file is run before all tests to set up the testing environment.
  */
 
-import { beforeEach, afterEach, vi } from "vitest";
+import { afterEach, vi } from "vitest";
 import "reflect-metadata";
 
 // Extend global interface for test utilities
@@ -25,17 +25,17 @@ process.env.MODULE_OPERATION_TIMEOUT = "5000"; // 5 seconds for tests
 
 // Mock console methods in tests (unless explicitly testing them)
 if (!process.env.LOG_LEVEL) {
-  global.console = {
+  globalThis.console = {
     ...console,
     log: vi.fn(),
     info: vi.fn(),
     warn: vi.fn(),
     error: vi.fn(),
-  };
+  } as Console;
 }
 
 // Global test utilities
-global.delay = (ms: number) =>
+globalThis.delay = (ms: number) =>
   new Promise((resolve) => setTimeout(resolve, ms));
 
 // Clean up after each test

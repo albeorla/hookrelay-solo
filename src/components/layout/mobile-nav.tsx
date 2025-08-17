@@ -110,12 +110,12 @@ function NavContent() {
   );
 }
 
-export function MobileNav() {
+export function MobileNav({ defaultOpen = false }: { defaultOpen?: boolean }) {
   return (
-    <div className="bg-background fixed right-0 bottom-0 left-0 border-t p-2 md:hidden">
-      <Sheet>
+    <div className="bg-background fixed right-0 bottom-0 left-0 z-40 border-t p-2 md:hidden">
+      <Sheet defaultOpen={defaultOpen}>
         <SheetTrigger asChild>
-          <Button variant="ghost" size="icon">
+          <Button variant="ghost" size="icon" aria-label="Open navigation">
             <Menu className="h-6 w-6" />
           </Button>
         </SheetTrigger>
