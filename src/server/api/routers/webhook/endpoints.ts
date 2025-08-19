@@ -30,16 +30,19 @@ export const endpointsProcedures = {
           id: item.endpoint_id?.S ?? "",
           name: item.endpoint_id?.S ?? "",
           url: item.dest_url?.S ?? "",
-          isActive: true,
+          isActive: item.is_active?.BOOL ?? true,
           deliveryCount: 0,
           method: "POST" as const,
-          timeout: 30,
-          maxRetries: 3,
+          timeout: item.timeout_seconds?.N
+            ? Number(item.timeout_seconds.N)
+            : 30,
+          maxRetries: item.max_retries?.N ? Number(item.max_retries.N) : 3,
           // Keep original fields in case other parts rely on them
           endpointId: item.endpoint_id?.S ?? "",
           destUrl: item.dest_url?.S ?? "",
           hmacMode: item.hmac_mode?.S ?? null,
           hasSecret: Boolean(item.secret?.S),
+          description: item.description?.S ?? null,
         })) ?? [];
 
       return endpoints;
@@ -74,15 +77,20 @@ export const endpointsProcedures = {
           id: result.Item.endpoint_id?.S ?? "",
           name: result.Item.endpoint_id?.S ?? "",
           url: result.Item.dest_url?.S ?? "",
-          isActive: true,
+          isActive: result.Item.is_active?.BOOL ?? true,
           deliveryCount: 0,
           method: "POST" as const,
-          timeout: 30,
-          maxRetries: 3,
+          timeout: result.Item.timeout_seconds?.N
+            ? Number(result.Item.timeout_seconds.N)
+            : 30,
+          maxRetries: result.Item.max_retries?.N
+            ? Number(result.Item.max_retries.N)
+            : 3,
           endpointId: result.Item.endpoint_id?.S ?? "",
           destUrl: result.Item.dest_url?.S ?? "",
           hmacMode: result.Item.hmac_mode?.S ?? null,
           hasSecret: Boolean(result.Item.secret?.S),
+          description: result.Item.description?.S ?? null,
         };
       } catch (error) {
         if (error instanceof TRPCError) throw error;
@@ -101,6 +109,8 @@ export const endpointsProcedures = {
         destUrl: z.string().url(),
         hmacMode: z.enum(["stripe", "github", "generic"]).optional(),
         secret: z.string().optional(),
+        description: z.string().max(500).optional(),
+        isActive: z.boolean().optional(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -115,6 +125,12 @@ export const endpointsProcedures = {
         }
         if (input.secret) {
           item.secret = { S: input.secret };
+        }
+        if (input.description) {
+          item.description = { S: input.description };
+        }
+        if (typeof input.isActive === "boolean") {
+          item.is_active = { BOOL: input.isActive };
         }
 
         await dynamoDb.send(
@@ -172,6 +188,7 @@ export const endpointsProcedures = {
         isActive: z.boolean().optional(),
         timeout: z.number().min(1).max(300).optional(),
         maxRetries: z.number().min(0).max(10).optional(),
+        description: z.string().max(500).optional(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -209,6 +226,11 @@ export const endpointsProcedures = {
           expressionAttributeValues[":maxRetries"] = {
             N: String(input.maxRetries),
           };
+        }
+
+        if (input.description !== undefined) {
+          updateExpression.push("description = :description");
+          expressionAttributeValues[":description"] = { S: input.description };
         }
 
         if (updateExpression.length === 0) {

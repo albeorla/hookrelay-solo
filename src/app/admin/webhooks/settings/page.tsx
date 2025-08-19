@@ -33,6 +33,7 @@ import { Badge } from "~/components/ui/badge";
 import { Label } from "~/components/ui/label";
 import { Switch } from "~/components/ui/switch";
 import { Textarea } from "~/components/ui/textarea";
+import { Input } from "~/components/ui/input";
 // removed unused Separator
 import { Alert, AlertDescription, AlertTitle } from "~/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "~/components/ui/tabs";
@@ -79,6 +80,11 @@ interface WebhookSettings {
   customHeaders: Record<string, string>;
   debugMode: boolean;
   enableMetrics: boolean;
+
+  // LocalStack / Endpoint overrides (UI-only for now; persisted in settings payload)
+  localstackDynamoUrl?: string;
+  localstackSqsUrl?: string;
+  localstackS3Url?: string;
 }
 
 const DEFAULT_SETTINGS: WebhookSettings = {
@@ -103,6 +109,9 @@ const DEFAULT_SETTINGS: WebhookSettings = {
   customHeaders: {},
   debugMode: false,
   enableMetrics: true,
+  localstackDynamoUrl: "",
+  localstackSqsUrl: "",
+  localstackS3Url: "",
 };
 
 export default function WebhookSettingsPage() {
@@ -168,7 +177,7 @@ export default function WebhookSettingsPage() {
   };
 
   const handleSaveSettings = async () => {
-    await saveSettings.mutateAsync(settings);
+    await saveSettings.mutateAsync(settings as any);
   };
 
   const handleTestConnection = async () => {
@@ -261,12 +270,13 @@ export default function WebhookSettingsPage() {
             onValueChange={setActiveTab}
             className="space-y-6"
           >
-            <TabsList className="grid w-full grid-cols-5">
+            <TabsList className="grid w-full grid-cols-6">
               <TabsTrigger value="general">General</TabsTrigger>
               <TabsTrigger value="security">Security</TabsTrigger>
               <TabsTrigger value="monitoring">Monitoring</TabsTrigger>
               <TabsTrigger value="performance">Performance</TabsTrigger>
               <TabsTrigger value="advanced">Advanced</TabsTrigger>
+              <TabsTrigger value="localstack">LocalStack</TabsTrigger>
             </TabsList>
 
             {/* General Settings */}
@@ -793,6 +803,70 @@ export default function WebhookSettingsPage() {
                     <RotateCcw className="mr-2 h-4 w-4" />
                     Reset All Settings to Defaults
                   </Button>
+                </CardContent>
+              </Card>
+            </TabsContent>
+
+            {/* LocalStack Configuration */}
+            <TabsContent value="localstack" className="space-y-6">
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Server className="h-5 w-5" />
+                    LocalStack Configuration
+                  </CardTitle>
+                  <CardDescription>
+                    Override AWS service endpoints for local development.
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                    <div className="space-y-2">
+                      <Label>DynamoDB Endpoint URL</Label>
+                      <Input
+                        placeholder="http://localhost:4566"
+                        value={settings.localstackDynamoUrl}
+                        onChange={(e) =>
+                          handleSettingChange(
+                            "localstackDynamoUrl",
+                            e.target.value,
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>SQS Endpoint URL</Label>
+                      <Input
+                        placeholder="http://localhost:4566"
+                        value={settings.localstackSqsUrl}
+                        onChange={(e) =>
+                          handleSettingChange(
+                            "localstackSqsUrl",
+                            e.target.value,
+                          )
+                        }
+                      />
+                    </div>
+                    <div className="space-y-2 md:col-span-2">
+                      <Label>S3 Endpoint URL</Label>
+                      <Input
+                        placeholder="http://localhost:4566"
+                        value={settings.localstackS3Url}
+                        onChange={(e) =>
+                          handleSettingChange("localstackS3Url", e.target.value)
+                        }
+                      />
+                    </div>
+                  </div>
+                  <Alert>
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Note</AlertTitle>
+                    <AlertDescription>
+                      These values are stored with system settings and can be
+                      used by your backend to override AWS SDK endpoints in
+                      development.
+                    </AlertDescription>
+                  </Alert>
                 </CardContent>
               </Card>
             </TabsContent>

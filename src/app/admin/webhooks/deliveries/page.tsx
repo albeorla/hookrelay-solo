@@ -638,152 +638,165 @@ export default function DeliveryLogsPage() {
                 {deliveriesLoading ? (
                   <DeliveryTableSkeleton rows={pagination.pageSize} />
                 ) : (
-                  <Table>
-                    <TableHeader>
-                      <TableRow>
-                        <TableHead className="w-12">
-                          <Checkbox
-                            checked={
-                              selectedDeliveries.length ===
-                                allDeliveries.length && allDeliveries.length > 0
-                            }
-                            onCheckedChange={handleSelectAll}
-                          />
-                        </TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Endpoint</TableHead>
-                        <TableHead>Delivery ID</TableHead>
-                        <TableHead>Timestamp</TableHead>
-                        <TableHead>HTTP Status</TableHead>
-                        <TableHead>Duration</TableHead>
-                        <TableHead>Attempts</TableHead>
-                        <TableHead className="w-12"></TableHead>
-                      </TableRow>
-                    </TableHeader>
-                    <TableBody>
-                      {allDeliveries.map((delivery: any) => {
-                        const isSelected = selectedDeliveries.includes(
-                          `${delivery.endpointId}::${delivery.deliveryId}`,
-                        );
-                        return (
-                          <TableRow
-                            key={`${delivery.endpointId}-${delivery.deliveryId}`}
-                          >
-                            <TableCell>
-                              <Checkbox
-                                checked={isSelected}
-                                onCheckedChange={(checked) =>
-                                  handleSelectDelivery(
-                                    delivery.deliveryId,
-                                    delivery.endpointId,
-                                    checked as boolean,
-                                  )
-                                }
-                              />
-                            </TableCell>
-                            <TableCell>
-                              <div className="flex items-center gap-2">
-                                {getStatusIcon(delivery.status)}
-                                {getStatusBadge(delivery.status)}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <div>
-                                <div className="max-w-32 truncate font-medium">
-                                  {delivery.endpointId}
-                                </div>
-                                <div className="text-muted-foreground max-w-32 truncate text-sm">
-                                  {delivery.destUrl}
-                                </div>
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              <code className="bg-muted rounded px-1 py-0.5 text-xs">
-                                {delivery.deliveryId}
-                              </code>
-                            </TableCell>
-                            <TableCell>
-                              <div className="text-sm">
-                                {formatTimestamp(delivery.timestamp)}
-                              </div>
-                            </TableCell>
-                            <TableCell>
-                              {delivery.responseStatus ? (
-                                <Badge
-                                  variant={
-                                    delivery.responseStatus >= 200 &&
-                                    delivery.responseStatus < 300
-                                      ? "default"
-                                      : "destructive"
+                  <div
+                    className="overflow-x-auto"
+                    role="region"
+                    aria-label="Delivery logs table"
+                  >
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead className="w-12">
+                            <Checkbox
+                              checked={
+                                selectedDeliveries.length ===
+                                  allDeliveries.length &&
+                                allDeliveries.length > 0
+                              }
+                              onCheckedChange={handleSelectAll}
+                            />
+                          </TableHead>
+                          <TableHead>Status</TableHead>
+                          <TableHead>Endpoint</TableHead>
+                          <TableHead>Delivery ID</TableHead>
+                          <TableHead>Timestamp</TableHead>
+                          <TableHead>HTTP Status</TableHead>
+                          <TableHead>Duration</TableHead>
+                          <TableHead>Attempts</TableHead>
+                          <TableHead className="w-12"></TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {allDeliveries.map((delivery: any) => {
+                          const isSelected = selectedDeliveries.includes(
+                            `${delivery.endpointId}::${delivery.deliveryId}`,
+                          );
+                          return (
+                            <TableRow
+                              key={`${delivery.endpointId}-${delivery.deliveryId}`}
+                            >
+                              <TableCell>
+                                <Checkbox
+                                  checked={isSelected}
+                                  onCheckedChange={(checked) =>
+                                    handleSelectDelivery(
+                                      delivery.deliveryId,
+                                      delivery.endpointId,
+                                      checked as boolean,
+                                    )
                                   }
-                                >
-                                  {delivery.responseStatus}
+                                />
+                              </TableCell>
+                              <TableCell>
+                                <div className="flex items-center gap-2">
+                                  {getStatusIcon(delivery.status)}
+                                  {getStatusBadge(delivery.status)}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <div>
+                                  <div className="max-w-32 truncate font-medium">
+                                    {delivery.endpointId}
+                                  </div>
+                                  <div className="text-muted-foreground max-w-32 truncate text-sm">
+                                    {delivery.destUrl}
+                                  </div>
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                <code className="bg-muted rounded px-1 py-0.5 text-xs">
+                                  {delivery.deliveryId}
+                                </code>
+                              </TableCell>
+                              <TableCell>
+                                <div className="text-sm">
+                                  {formatTimestamp(delivery.timestamp)}
+                                </div>
+                              </TableCell>
+                              <TableCell>
+                                {delivery.responseStatus ? (
+                                  <Badge
+                                    variant={
+                                      delivery.responseStatus >= 200 &&
+                                      delivery.responseStatus < 300
+                                        ? "default"
+                                        : "destructive"
+                                    }
+                                  >
+                                    {delivery.responseStatus}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground">
+                                    -
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                {delivery.durationMs ? (
+                                  <span className="text-sm">
+                                    {delivery.durationMs}ms
+                                  </span>
+                                ) : (
+                                  <span className="text-muted-foreground">
+                                    -
+                                  </span>
+                                )}
+                              </TableCell>
+                              <TableCell>
+                                <Badge variant="outline">
+                                  {delivery.attempt}
                                 </Badge>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              {delivery.durationMs ? (
-                                <span className="text-sm">
-                                  {delivery.durationMs}ms
-                                </span>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
-                            </TableCell>
-                            <TableCell>
-                              <Badge variant="outline">
-                                {delivery.attempt}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-8 w-8"
-                                  >
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                  <DropdownMenuItem
-                                    onClick={() => {
-                                      setSelectedDelivery(delivery);
-                                      setDetailsDialogOpen(true);
-                                    }}
-                                  >
-                                    <Eye className="mr-2 h-4 w-4" />
-                                    View Details
-                                  </DropdownMenuItem>
-                                  {delivery.status === "failed" && (
-                                    <>
-                                      <DropdownMenuSeparator />
-                                      <DropdownMenuItem
-                                        onClick={() =>
-                                          handleRetryDelivery(
-                                            delivery.endpointId,
-                                            delivery.deliveryId,
-                                          )
-                                        }
-                                        disabled={retryDelivery.isPending}
-                                      >
-                                        <RotateCcw className="mr-2 h-4 w-4" />
-                                        Retry Delivery
-                                      </DropdownMenuItem>
-                                    </>
-                                  )}
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </TableCell>
-                          </TableRow>
-                        );
-                      })}
-                    </TableBody>
-                  </Table>
+                              </TableCell>
+                              <TableCell>
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-8 w-8"
+                                    >
+                                      <MoreHorizontal className="h-4 w-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuLabel>
+                                      Actions
+                                    </DropdownMenuLabel>
+                                    <DropdownMenuItem
+                                      onClick={() => {
+                                        setSelectedDelivery(delivery);
+                                        setDetailsDialogOpen(true);
+                                      }}
+                                    >
+                                      <Eye className="mr-2 h-4 w-4" />
+                                      View Details
+                                    </DropdownMenuItem>
+                                    {delivery.status === "failed" && (
+                                      <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                          onClick={() =>
+                                            handleRetryDelivery(
+                                              delivery.endpointId,
+                                              delivery.deliveryId,
+                                            )
+                                          }
+                                          disabled={retryDelivery.isPending}
+                                        >
+                                          <RotateCcw className="mr-2 h-4 w-4" />
+                                          Retry Delivery
+                                        </DropdownMenuItem>
+                                      </>
+                                    )}
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </TableCell>
+                            </TableRow>
+                          );
+                        })}
+                      </TableBody>
+                    </Table>
+                  </div>
                 )}
 
                 {allDeliveries.length === 0 && !deliveriesLoading && (

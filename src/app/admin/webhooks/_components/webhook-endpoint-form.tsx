@@ -25,6 +25,8 @@ import {
 } from "~/components/ui/select";
 import { api } from "~/trpc/react";
 import { Loader2 } from "lucide-react";
+import { Switch } from "~/components/ui/switch";
+import { Textarea } from "~/components/ui/textarea";
 
 const webhookEndpointSchema = z
   .object({
@@ -38,6 +40,7 @@ const webhookEndpointSchema = z
     destUrl: z.string().url("Must be a valid URL"),
     hmacMode: z.enum(["stripe", "github", "generic"]).optional(),
     secret: z.string().optional(),
+    description: z.string().max(500).optional(),
   })
   .refine(
     (data) => {
@@ -66,8 +69,10 @@ export function WebhookEndpointForm({ onSuccess }: WebhookEndpointFormProps) {
       destUrl: "",
       hmacMode: undefined,
       secret: "",
+      description: "",
     },
   });
+  const [isActive, setIsActive] = React.useState(true);
 
   const createEndpoint = api.webhook.createEndpoint.useMutation({
     onSuccess: () => {
@@ -86,6 +91,8 @@ export function WebhookEndpointForm({ onSuccess }: WebhookEndpointFormProps) {
       destUrl: data.destUrl,
       hmacMode: data.hmacMode,
       secret: data.secret ?? undefined,
+      description: data.description || undefined,
+      isActive,
     });
   };
 
@@ -165,6 +172,43 @@ export function WebhookEndpointForm({ onSuccess }: WebhookEndpointFormProps) {
             </FormItem>
           )}
         />
+
+        <FormField
+          control={form.control}
+          name="description"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Description (optional)</FormLabel>
+              <FormControl>
+                <Textarea
+                  placeholder="Short description to identify this endpoint"
+                  rows={3}
+                  {...field}
+                  disabled={isSubmitting}
+                />
+              </FormControl>
+              <FormDescription>
+                Up to 500 characters. Shown in the endpoints list.
+              </FormDescription>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="space-y-2">
+          <FormLabel>Active</FormLabel>
+          <div className="flex items-center justify-between rounded border p-3">
+            <div className="text-muted-foreground text-sm">
+              When disabled, deliveries will be paused for this endpoint.
+            </div>
+            <Switch
+              checked={isActive}
+              onCheckedChange={setIsActive}
+              disabled={isSubmitting}
+              aria-label="Toggle endpoint active"
+            />
+          </div>
+        </div>
 
         {form.watch("hmacMode") && (
           <FormField

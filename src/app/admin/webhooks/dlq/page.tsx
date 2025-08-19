@@ -360,129 +360,139 @@ export default function DlqViewerPage() {
               {dlqLoading ? (
                 <DlqItemsSkeleton count={10} />
               ) : (
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-12">
-                        <Checkbox
-                          checked={
-                            selectedItems.length === dlqItems.length &&
-                            dlqItems.length > 0
-                          }
-                          onCheckedChange={handleSelectAll}
-                        />
-                      </TableHead>
-                      <TableHead>Endpoint</TableHead>
-                      <TableHead>Delivery ID</TableHead>
-                      <TableHead>Failed At</TableHead>
-                      <TableHead>Reason</TableHead>
-                      <TableHead>Attempts</TableHead>
-                      <TableHead>Size</TableHead>
-                      <TableHead className="w-12"></TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {dlqItems.map((item) => {
-                      const isSelected = selectedItems.includes(item.key);
-                      const daysSince = getDaysSinceFailed(item.lastModified);
+                <div
+                  className="overflow-x-auto"
+                  role="region"
+                  aria-label="Dead Letter Queue items table"
+                >
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="w-12">
+                          <Checkbox
+                            checked={
+                              selectedItems.length === dlqItems.length &&
+                              dlqItems.length > 0
+                            }
+                            onCheckedChange={handleSelectAll}
+                          />
+                        </TableHead>
+                        <TableHead>Endpoint</TableHead>
+                        <TableHead>Delivery ID</TableHead>
+                        <TableHead>Failed At</TableHead>
+                        <TableHead>Reason</TableHead>
+                        <TableHead>Attempts</TableHead>
+                        <TableHead>Size</TableHead>
+                        <TableHead className="w-12"></TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {dlqItems.map((item) => {
+                        const isSelected = selectedItems.includes(item.key);
+                        const daysSince = getDaysSinceFailed(item.lastModified);
 
-                      return (
-                        <TableRow key={item.key}>
-                          <TableCell>
-                            <Checkbox
-                              checked={isSelected}
-                              onCheckedChange={(checked) =>
-                                handleSelectItem(item.key, checked as boolean)
-                              }
-                            />
-                          </TableCell>
-                          <TableCell>
-                            <div>
-                              <div className="max-w-32 truncate font-medium">
-                                {item.endpointId}
+                        return (
+                          <TableRow key={item.key}>
+                            <TableCell>
+                              <Checkbox
+                                checked={isSelected}
+                                onCheckedChange={(checked) =>
+                                  handleSelectItem(item.key, checked as boolean)
+                                }
+                              />
+                            </TableCell>
+                            <TableCell>
+                              <div>
+                                <div className="max-w-32 truncate font-medium">
+                                  {item.endpointId}
+                                </div>
+                                {daysSince > 3 && (
+                                  <Badge
+                                    variant="outline"
+                                    className="mt-1 text-xs"
+                                  >
+                                    {daysSince} days old
+                                  </Badge>
+                                )}
                               </div>
-                              {daysSince > 3 && (
-                                <Badge
-                                  variant="outline"
-                                  className="mt-1 text-xs"
-                                >
-                                  {daysSince} days old
-                                </Badge>
-                              )}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <code className="bg-muted rounded px-1 py-0.5 text-xs">
-                              {item.deliveryId.length > 16
-                                ? item.deliveryId.substring(0, 16) + "..."
-                                : item.deliveryId}
-                            </code>
-                          </TableCell>
-                          <TableCell>
-                            <div className="text-sm">
-                              {formatTimestamp(item.lastModified)}
-                            </div>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant={getReasonBadgeVariant(item.reason)}>
-                              {item.reason}
-                            </Badge>
-                          </TableCell>
-                          <TableCell>
-                            <Badge variant="outline">{item.attemptCount}</Badge>
-                          </TableCell>
-                          <TableCell>
-                            <span className="text-muted-foreground text-sm">
-                              {formatFileSize(item.size)}
-                            </span>
-                          </TableCell>
-                          <TableCell>
-                            <DropdownMenu>
-                              <DropdownMenuTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-8 w-8"
-                                >
-                                  <MoreHorizontal className="h-4 w-4" />
-                                </Button>
-                              </DropdownMenuTrigger>
-                              <DropdownMenuContent align="end">
-                                <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                                <DropdownMenuItem
-                                  onClick={() => {
-                                    setSelectedItem(item);
-                                    setDetailsDialogOpen(true);
-                                  }}
-                                >
-                                  <Eye className="mr-2 h-4 w-4" />
-                                  View Details
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => handleReplayItem(item.key)}
-                                  disabled={replayFromDlq.isPending}
-                                >
-                                  <RotateCcw className="mr-2 h-4 w-4" />
-                                  Replay Delivery
-                                </DropdownMenuItem>
-                                <DropdownMenuSeparator />
-                                <DropdownMenuItem
-                                  onClick={() => handleDeleteItem(item.key)}
-                                  disabled={deleteDlqItem.isPending}
-                                  className="text-destructive"
-                                >
-                                  <Trash2 className="mr-2 h-4 w-4" />
-                                  Delete Item
-                                </DropdownMenuItem>
-                              </DropdownMenuContent>
-                            </DropdownMenu>
-                          </TableCell>
-                        </TableRow>
-                      );
-                    })}
-                  </TableBody>
-                </Table>
+                            </TableCell>
+                            <TableCell>
+                              <code className="bg-muted rounded px-1 py-0.5 text-xs">
+                                {item.deliveryId.length > 16
+                                  ? item.deliveryId.substring(0, 16) + "..."
+                                  : item.deliveryId}
+                              </code>
+                            </TableCell>
+                            <TableCell>
+                              <div className="text-sm">
+                                {formatTimestamp(item.lastModified)}
+                              </div>
+                            </TableCell>
+                            <TableCell>
+                              <Badge
+                                variant={getReasonBadgeVariant(item.reason)}
+                              >
+                                {item.reason}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <Badge variant="outline">
+                                {item.attemptCount}
+                              </Badge>
+                            </TableCell>
+                            <TableCell>
+                              <span className="text-muted-foreground text-sm">
+                                {formatFileSize(item.size)}
+                              </span>
+                            </TableCell>
+                            <TableCell>
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8"
+                                  >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                                  <DropdownMenuItem
+                                    onClick={() => {
+                                      setSelectedItem(item);
+                                      setDetailsDialogOpen(true);
+                                    }}
+                                  >
+                                    <Eye className="mr-2 h-4 w-4" />
+                                    View Details
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => handleReplayItem(item.key)}
+                                    disabled={replayFromDlq.isPending}
+                                  >
+                                    <RotateCcw className="mr-2 h-4 w-4" />
+                                    Replay Delivery
+                                  </DropdownMenuItem>
+                                  <DropdownMenuSeparator />
+                                  <DropdownMenuItem
+                                    onClick={() => handleDeleteItem(item.key)}
+                                    disabled={deleteDlqItem.isPending}
+                                    className="text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete Item
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </TableCell>
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               )}
 
               {dlqItems.length === 0 && !dlqLoading && (
