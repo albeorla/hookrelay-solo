@@ -33,7 +33,7 @@ interface WebhookEndpointDetailsPageProps {
 export default function WebhookEndpointDetailsPage({
   params,
 }: WebhookEndpointDetailsPageProps) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
 
@@ -75,6 +75,27 @@ export default function WebhookEndpointDetailsPage({
       router.push("/");
     }
   }, [session, router]);
+
+  if (status === "loading") {
+    return (
+      <AuthenticatedLayout>
+        <div className="container mx-auto py-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Endpoint Configuration</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-2">
+                <div className="bg-muted/50 h-4 w-1/3 animate-pulse rounded" />
+                <div className="bg-muted/50 h-4 w-1/2 animate-pulse rounded" />
+                <div className="bg-muted/50 h-4 w-2/3 animate-pulse rounded" />
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
 
   if (!session?.user.roles?.includes("ADMIN")) {
     return null;

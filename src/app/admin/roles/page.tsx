@@ -27,24 +27,30 @@ import {
 } from "~/components/ui/alert-dialog";
 import { Badge, getRoleBadgeVariant } from "~/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { SkeletonCard } from "~/components/ui/skeleton-card";
 import { Separator } from "~/components/ui/separator";
 import { api, type RouterOutputs } from "~/trpc/react";
 import { RoleForm } from "./_components/role-form";
 import { AuthenticatedLayout } from "~/components/layout/authenticated-layout";
 
 export default function RolesPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   type RoleItem = RouterOutputs["role"]["getAll"][number];
   const [editingRole, setEditingRole] = useState<RoleItem | null>(null);
 
-  const { data: roles, refetch } = api.role.getAll.useQuery(undefined, {
+  const {
+    data: roles,
+    refetch,
+    isLoading: isLoadingRoles,
+  } = api.role.getAll.useQuery(undefined, {
     enabled: session?.user.roles?.includes("ADMIN") ?? false,
   });
-  const { data: allPermissions } = api.permission.getAll.useQuery(undefined, {
-    enabled: session?.user.roles?.includes("ADMIN") ?? false,
-  });
+  const { data: allPermissions, isLoading: isLoadingPermissions } =
+    api.permission.getAll.useQuery(undefined, {
+      enabled: session?.user.roles?.includes("ADMIN") ?? false,
+    });
 
   const deleteRole = api.role.delete.useMutation({
     onSuccess: () => {
@@ -61,6 +67,20 @@ export default function RolesPage() {
       router.push("/");
     }
   }, [session, router]);
+
+  if (status === "loading") {
+    return (
+      <AuthenticatedLayout>
+        <div className="container mx-auto py-12">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
 
   if (!session?.user.roles?.includes("ADMIN")) {
     return null;
@@ -156,129 +176,138 @@ export default function RolesPage() {
 
         <Separator className="mb-8" />
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {roles?.map((role) => (
-            <Card key={role.id} className="flex flex-col">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    {getRoleIcon(role.name)}
-                    <div>
-                      <CardTitle>{role.name}</CardTitle>
-                      <Badge
-                        variant={getRoleBadgeVariant(role.name)}
-                        className="mt-1"
-                      >
-                        {getRolePriority(role.name)}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                    <Shield className="h-4 w-4" />
-                    <span>{role.permissions.length} permissions</span>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-grow space-y-4">
-                <p className="text-muted-foreground text-sm">
-                  {role.description ?? "No description provided"}
-                </p>
-                <div>
-                  <h4 className="mb-2 font-semibold">Assigned Permissions</h4>
-                  {role.permissions.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {role.permissions.map((rp) => (
+        {isLoadingRoles || isLoadingPermissions ? (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {roles?.map((role) => (
+              <Card key={role.id} className="flex flex-col">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                      {getRoleIcon(role.name)}
+                      <div>
+                        <CardTitle>{role.name}</CardTitle>
                         <Badge
-                          key={rp.permission.id}
-                          variant={getRoleBadgeVariant(rp.permission.name)}
+                          variant={getRoleBadgeVariant(role.name)}
+                          className="mt-1"
                         >
-                          {rp.permission.name}
+                          {getRolePriority(role.name)}
                         </Badge>
-                      ))}
+                      </div>
                     </div>
-                  ) : (
-                    <p className="text-muted-foreground text-sm italic">
-                      No permissions assigned
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <h4 className="mb-2 font-semibold">Users with this Role</h4>
-                  {role.users.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {role.users.map((ur) => (
-                        <Badge key={ur.user.id} variant="secondary">
-                          {ur.user.name ?? ur.user.email}
-                        </Badge>
-                      ))}
+                    <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                      <Shield className="h-4 w-4" />
+                      <span>{role.permissions.length} permissions</span>
                     </div>
-                  ) : (
-                    <p className="text-muted-foreground text-sm italic">
-                      No users assigned
-                    </p>
-                  )}
-                </div>
-              </CardContent>
-              {role.name !== "ADMIN" && role.name !== "USER" ? (
-                <div className="border-t p-4">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditRole(role)}
-                      className="flex-1"
-                    >
-                      <Edit className="mr-2 h-4 w-4" />
-                      Edit
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1"
-                          color="destructive"
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>
-                            Delete Role: {role.name}
-                          </AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently
-                            delete the role and remove it from all users.
-                            {role.users.length > 0 &&
-                              ` This role is currently assigned to ${role.users.length} user(s).`}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDeleteRole(role.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-grow space-y-4">
+                  <p className="text-muted-foreground text-sm">
+                    {role.description ?? "No description provided"}
+                  </p>
+                  <div>
+                    <h4 className="mb-2 font-semibold">Assigned Permissions</h4>
+                    {role.permissions.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {role.permissions.map((rp) => (
+                          <Badge
+                            key={rp.permission.id}
+                            variant={getRoleBadgeVariant(rp.permission.name)}
                           >
+                            {rp.permission.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-sm italic">
+                        No permissions assigned
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <h4 className="mb-2 font-semibold">Users with this Role</h4>
+                    {role.users.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {role.users.map((ur) => (
+                          <Badge key={ur.user.id} variant="secondary">
+                            {ur.user.name ?? ur.user.email}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-sm italic">
+                        No users assigned
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+                {role.name !== "ADMIN" && role.name !== "USER" ? (
+                  <div className="border-t p-4">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditRole(role)}
+                        className="flex-1"
+                      >
+                        <Edit className="mr-2 h-4 w-4" />
+                        Edit
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1"
+                            color="destructive"
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
                             Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>
+                              Delete Role: {role.name}
+                            </AlertDialogTitle>
+                            <AlertDialogDescription>
+                              This action cannot be undone. This will
+                              permanently delete the role and remove it from all
+                              users.
+                              {role.users.length > 0 &&
+                                ` This role is currently assigned to ${role.users.length} user(s).`}
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteRole(role.id)}
+                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
-                </div>
-              ) : (
-                <div className="border-t p-4">
-                  <div className="text-muted-foreground flex items-center text-sm">
-                    <Shield className="mr-2 h-4 w-4" />
-                    <span>System role (protected)</span>
+                ) : (
+                  <div className="border-t p-4">
+                    <div className="text-muted-foreground flex items-center text-sm">
+                      <Shield className="mr-2 h-4 w-4" />
+                      <span>System role (protected)</span>
+                    </div>
                   </div>
-                </div>
-              )}
-            </Card>
-          ))}
-        </div>
+                )}
+              </Card>
+            ))}
+          </div>
+        )}
 
         <Separator className="my-8" />
 

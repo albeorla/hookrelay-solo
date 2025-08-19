@@ -115,7 +115,7 @@ interface AdvancedFiltersType {
 }
 
 export default function DeliveryLogsPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   // Pagination state
@@ -385,6 +385,23 @@ export default function DeliveryLogsPage() {
       ],
     ),
   );
+
+  if (status === "loading") {
+    return (
+      <AuthenticatedLayout>
+        <div className="container mx-auto py-8">
+          <Card>
+            <CardHeader>
+              <CardTitle>Delivery Logs</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <DeliveryTableSkeleton rows={20} />
+            </CardContent>
+          </Card>
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
 
   return (
     <AuthenticatedLayout>

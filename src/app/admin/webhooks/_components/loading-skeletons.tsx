@@ -10,7 +10,7 @@ const Skeleton = ({
   ...props
 }: React.HTMLAttributes<HTMLDivElement>) => (
   <div
-    className={`bg-muted/50 animate-pulse rounded-md ${className}`}
+    className={`bg-muted/50 max-w-full min-w-0 animate-pulse overflow-hidden rounded-md ${className}`}
     {...props}
   />
 );
@@ -18,16 +18,21 @@ const Skeleton = ({
 // Dashboard metrics skeleton
 export function DashboardMetricsSkeleton() {
   return (
-    <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+    <div className="grid w-full grid-cols-1 items-stretch gap-6 md:[grid-template-columns:repeat(2,minmax(14rem,1fr))] lg:[grid-template-columns:repeat(4,minmax(14rem,1fr))]">
       {Array.from({ length: 4 }).map((_, i) => (
-        <Card key={i}>
+        <Card
+          key={i}
+          className="flex min-h-[180px] w-full min-w-[14rem] flex-col"
+        >
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <Skeleton className="h-4 w-32" />
             <Skeleton className="h-4 w-4" />
           </CardHeader>
-          <CardContent>
-            <Skeleton className="mb-2 h-8 w-16" />
-            <Skeleton className="h-3 w-24" />
+          <CardContent className="mt-auto">
+            <div className="space-y-2">
+              <Skeleton className="h-7 w-40" />
+              <Skeleton className="h-3 w-36" />
+            </div>
           </CardContent>
         </Card>
       ))}
@@ -38,7 +43,7 @@ export function DashboardMetricsSkeleton() {
 // Table skeleton for delivery logs
 export function DeliveryTableSkeleton({ rows = 10 }: { rows?: number }) {
   return (
-    <div className="space-y-3">
+    <div className="min-w-0 space-y-3">
       {/* Table header */}
       <div className="flex items-center gap-4 border-b p-4">
         <Skeleton className="h-4 w-4" />
@@ -54,15 +59,15 @@ export function DeliveryTableSkeleton({ rows = 10 }: { rows?: number }) {
 
       {/* Table rows */}
       {Array.from({ length: rows }).map((_, i) => (
-        <div key={i} className="flex items-center gap-4 border-b p-4">
+        <div key={i} className="flex min-w-0 items-center gap-4 border-b p-4">
           <Skeleton className="h-4 w-4" />
           <div className="flex items-center gap-2">
             <Skeleton className="h-4 w-4 rounded-full" />
             <Skeleton className="h-4 w-16" />
           </div>
-          <div>
+          <div className="min-w-0">
             <Skeleton className="mb-1 h-4 w-24" />
-            <Skeleton className="h-3 w-32" />
+            <Skeleton className="h-3 w-32 max-w-full" />
           </div>
           <Skeleton className="h-4 w-20" />
           <Skeleton className="h-4 w-28" />
@@ -105,7 +110,7 @@ export function AnalyticsChartSkeleton() {
           <Skeleton className="h-4 w-60" />
         </CardHeader>
         <CardContent>
-          <div className="flex h-[300px] items-end gap-2 p-4">
+          <div className="flex h-[300px] min-w-0 items-end gap-2 p-4">
             {Array.from({ length: 12 }).map((_, i) => (
               <Skeleton
                 key={i}
@@ -118,7 +123,7 @@ export function AnalyticsChartSkeleton() {
       </Card>
 
       {/* Secondary charts grid */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
+      <div className="grid min-w-0 grid-cols-1 gap-6 lg:grid-cols-2">
         {Array.from({ length: 2 }).map((_, i) => (
           <Card key={i}>
             <CardHeader>

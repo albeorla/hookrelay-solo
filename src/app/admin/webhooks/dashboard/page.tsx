@@ -50,7 +50,7 @@ import {
 } from "~/hooks/use-optimized-query";
 
 export default function WebhooksDashboardPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
 
@@ -182,6 +182,19 @@ export default function WebhooksDashboardPage() {
   const isFetching = statsFetching || endpointsFetching || deliveriesFetching;
   // removed unused isLoading
 
+  if (status === "loading") {
+    return (
+      <AuthenticatedLayout>
+        <div className="container mx-auto py-8">
+          <div className="mb-8">
+            <DashboardMetricsSkeleton />
+          </div>
+          <RecentActivitySkeleton />
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
+
   return (
     <AuthenticatedLayout>
       <WebhookErrorBoundary>
@@ -241,12 +254,12 @@ export default function WebhooksDashboardPage() {
             )}
 
             {/* Health Metrics */}
-            <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-4">
+            <div className="mb-8 grid w-full grid-cols-1 items-stretch gap-6 md:[grid-template-columns:repeat(2,minmax(14rem,1fr))] lg:[grid-template-columns:repeat(4,minmax(14rem,1fr))]">
               {isInitialLoading ? (
                 <DashboardMetricsSkeleton />
               ) : (
                 <>
-                  <Card>
+                  <Card className="flex min-h-[180px] w-full min-w-[14rem] flex-col">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <CardTitle className="text-sm font-medium">
                         System Health
@@ -267,7 +280,7 @@ export default function WebhooksDashboardPage() {
                     </CardContent>
                   </Card>
 
-                  <Card>
+                  <Card className="flex min-h-[180px] w-full min-w-[14rem] flex-col">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <CardTitle className="text-sm font-medium">
                         Total Deliveries
@@ -285,7 +298,7 @@ export default function WebhooksDashboardPage() {
                     </CardContent>
                   </Card>
 
-                  <Card>
+                  <Card className="flex min-h-[180px] w-full min-w-[14rem] flex-col">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <CardTitle className="text-sm font-medium">
                         Active Endpoints
@@ -303,7 +316,7 @@ export default function WebhooksDashboardPage() {
                     </CardContent>
                   </Card>
 
-                  <Card>
+                  <Card className="flex min-h-[180px] w-full min-w-[14rem] flex-col">
                     <CardHeader className="flex flex-row items-center justify-between pb-2">
                       <CardTitle className="text-sm font-medium">
                         Queue Status

@@ -31,7 +31,7 @@ import { RealtimeStatus } from "../_components/realtime-status";
 import { api } from "~/trpc/react";
 
 export default function HealthMonitoringPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [refreshing, setRefreshing] = useState(false);
   const [showResolved, setShowResolved] = useState(false);
@@ -61,6 +61,29 @@ export default function HealthMonitoringPage() {
       router.push("/");
     }
   }, [session, router]);
+
+  if (status === "loading") {
+    return (
+      <AuthenticatedLayout>
+        <div className="container mx-auto py-8">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Card key={i}>
+                <CardHeader className="flex flex-row items-center justify-between pb-2">
+                  <div className="bg-muted/50 h-4 w-24 animate-pulse rounded" />
+                  <div className="bg-muted/50 h-4 w-4 animate-pulse rounded" />
+                </CardHeader>
+                <CardContent>
+                  <div className="bg-muted/50 h-8 w-16 animate-pulse rounded" />
+                  <div className="bg-muted/50 mt-2 h-3 w-24 animate-pulse rounded" />
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
 
   if (!session?.user.roles?.includes("ADMIN")) {
     return null;

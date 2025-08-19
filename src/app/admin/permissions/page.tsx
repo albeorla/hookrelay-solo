@@ -14,22 +14,38 @@ import {
 } from "lucide-react";
 import { Badge, getRoleBadgeVariant } from "~/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import { SkeletonCard } from "~/components/ui/skeleton-card";
 import { Separator } from "~/components/ui/separator";
 import { api } from "~/trpc/react";
 import { AuthenticatedLayout } from "~/components/layout/authenticated-layout";
 
 export default function PermissionsPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
-  const { data: permissions } = api.permission.getAll.useQuery(undefined, {
-    enabled: session?.user.roles?.includes("ADMIN") ?? false,
-  });
+  const { data: permissions, isLoading: isLoadingPermissions } =
+    api.permission.getAll.useQuery(undefined, {
+      enabled: session?.user.roles?.includes("ADMIN") ?? false,
+    });
 
   React.useEffect(() => {
     if (session && !session.user.roles?.includes("ADMIN")) {
       router.push("/");
     }
   }, [session, router]);
+
+  if (status === "loading") {
+    return (
+      <AuthenticatedLayout>
+        <div className="container mx-auto py-12">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
 
   if (!session?.user.roles?.includes("ADMIN")) {
     return null;
@@ -87,61 +103,69 @@ export default function PermissionsPage() {
 
         <Separator className="mb-8" />
 
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-          {permissions?.map((permission) => (
-            <Card key={permission.id} className="flex flex-col">
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-4">
-                    {getPermissionIcon(permission.name)}
-                    <div>
-                      <CardTitle>{permission.name}</CardTitle>
-                      <Badge
-                        variant={getRoleBadgeVariant(
-                          getPermissionCategory(permission.name),
-                        )}
-                        className="mt-1"
-                      >
-                        {getPermissionCategory(permission.name)}
-                      </Badge>
-                    </div>
-                  </div>
-                  <div className="text-muted-foreground flex items-center gap-2 text-sm">
-                    <Shield className="h-4 w-4" />
-                    <span>{permission.roles.length} roles</span>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="flex-grow space-y-4">
-                <p className="text-muted-foreground text-sm">
-                  {permission.description ?? "No description provided"}
-                </p>
-                <div>
-                  <h4 className="mb-2 font-semibold">Assigned Roles</h4>
-                  {permission.roles.length > 0 ? (
-                    <div className="flex flex-wrap gap-2">
-                      {permission.roles.map((rp) => (
+        {isLoadingPermissions ? (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonCard key={i} />
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {permissions?.map((permission) => (
+              <Card key={permission.id} className="flex flex-col">
+                <CardHeader>
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-4">
+                      {getPermissionIcon(permission.name)}
+                      <div>
+                        <CardTitle>{permission.name}</CardTitle>
                         <Badge
-                          key={rp.role.id}
-                          variant={getRoleBadgeVariant(rp.role.name)}
+                          variant={getRoleBadgeVariant(
+                            getPermissionCategory(permission.name),
+                          )}
+                          className="mt-1"
                         >
-                          {rp.role.name}
+                          {getPermissionCategory(permission.name)}
                         </Badge>
-                      ))}
+                      </div>
                     </div>
-                  ) : (
-                    <p className="text-muted-foreground text-sm italic">
-                      No roles assigned
-                    </p>
-                  )}
+                    <div className="text-muted-foreground flex items-center gap-2 text-sm">
+                      <Shield className="h-4 w-4" />
+                      <span>{permission.roles.length} roles</span>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="flex-grow space-y-4">
+                  <p className="text-muted-foreground text-sm">
+                    {permission.description ?? "No description provided"}
+                  </p>
+                  <div>
+                    <h4 className="mb-2 font-semibold">Assigned Roles</h4>
+                    {permission.roles.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {permission.roles.map((rp) => (
+                          <Badge
+                            key={rp.role.id}
+                            variant={getRoleBadgeVariant(rp.role.name)}
+                          >
+                            {rp.role.name}
+                          </Badge>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-muted-foreground text-sm italic">
+                        No roles assigned
+                      </p>
+                    )}
+                  </div>
+                </CardContent>
+                <div className="text-muted-foreground border-t p-4 text-center text-sm">
+                  View-only. Assign permissions on the Roles page.
                 </div>
-              </CardContent>
-              <div className="text-muted-foreground border-t p-4 text-center text-sm">
-                View-only. Assign permissions on the Roles page.
-              </div>
-            </Card>
-          ))}
-        </div>
+              </Card>
+            ))}
+          </div>
+        )}
 
         <Separator className="my-8" />
 

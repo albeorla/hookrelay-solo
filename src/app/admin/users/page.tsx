@@ -55,7 +55,7 @@ import { SkeletonUserCard } from "~/components/ui/skeleton-card";
 import { Avatar, AvatarFallback, AvatarImage } from "~/components/ui/avatar";
 
 export default function UsersPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [isRoleDialogOpen, setIsRoleDialogOpen] = useState(false);
   type UserItem = RouterOutputs["user"]["getAll"][number];
@@ -156,6 +156,20 @@ export default function UsersPage() {
       .toUpperCase()
       .slice(0, 2);
   };
+
+  if (status === "loading") {
+    return (
+      <AuthenticatedLayout>
+        <div className="container mx-auto py-12">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <SkeletonUserCard key={i} />
+            ))}
+          </div>
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
 
   if (!session?.user.roles?.includes("ADMIN")) {
     return null;

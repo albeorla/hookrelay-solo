@@ -30,6 +30,10 @@ import {
 } from "~/components/ui/dialog";
 import { Badge } from "~/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
+import {
+  DashboardMetricsSkeleton,
+  RecentActivitySkeleton,
+} from "./_components/loading-skeletons";
 import { Separator } from "~/components/ui/separator";
 import { AuthenticatedLayout } from "~/components/layout/authenticated-layout";
 import { api } from "~/trpc/react";
@@ -37,20 +41,24 @@ import { WebhookEndpointForm } from "./_components/webhook-endpoint-form";
 import { WebhookErrorBoundary } from "~/components/error-boundary";
 
 export default function WebhooksPage() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
 
-  const { data: endpoints, refetch: refetchEndpoints } =
-    api.webhook.getEndpoints.useQuery(undefined, {
-      enabled: session?.user.roles?.includes("ADMIN") ?? false,
-      refetchInterval: 5000,
-    });
-
-  const { data: stats } = api.webhook.getStats.useQuery(undefined, {
+  const {
+    data: endpoints,
+    refetch: refetchEndpoints,
+    isLoading: endpointsLoading,
+  } = api.webhook.getEndpoints.useQuery(undefined, {
     enabled: session?.user.roles?.includes("ADMIN") ?? false,
-    refetchInterval: 2000,
+    refetchInterval: 5000,
   });
+
+  const { data: stats, isLoading: statsLoading } =
+    api.webhook.getStats.useQuery(undefined, {
+      enabled: session?.user.roles?.includes("ADMIN") ?? false,
+      refetchInterval: 2000,
+    });
 
   const { data: recentDeliveries } = api.webhook.getRecentDeliveries.useQuery(
     { limit: 10 },
@@ -98,6 +106,19 @@ export default function WebhooksPage() {
       router.push("/");
     }
   }, [session, router]);
+
+  if (status === "loading") {
+    return (
+      <AuthenticatedLayout>
+        <div className="container mx-auto py-12">
+          <div className="mb-8">
+            <DashboardMetricsSkeleton />
+          </div>
+          <RecentActivitySkeleton />
+        </div>
+      </AuthenticatedLayout>
+    );
+  }
 
   if (!session?.user.roles?.includes("ADMIN")) {
     return null;
@@ -190,7 +211,7 @@ export default function WebhooksPage() {
 
           <Separator className="mb-8" />
 
-          {statsData && (
+          {statsData && !statsLoading && (
             <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-3">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between pb-2">
@@ -243,123 +264,144 @@ export default function WebhooksPage() {
             </div>
           )}
 
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {endpointsList.map((endpoint: EndpointUI) => (
-              <Card key={endpoint.id} className="flex flex-col">
-                <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div className="flex items-center gap-4">
-                      <Webhook className="text-muted-foreground h-6 w-6" />
-                      <div>
-                        <CardTitle>
-                          {endpoint.name ?? "Unnamed Endpoint"}
-                        </CardTitle>
-                        <Badge
-                          variant={endpoint.isActive ? "default" : "outline"}
-                          className="mt-1"
-                        >
-                          {endpoint.isActive ? "Active" : "Inactive"}
-                        </Badge>
+          {endpointsLoading ? (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <Card key={i} className="min-h-[220px]">
+                  <CardContent className="pt-6">
+                    <div className="space-y-3">
+                      <div className="bg-muted/50 h-6 w-1/3 animate-pulse rounded" />
+                      <div className="bg-muted/50 h-4 w-1/2 animate-pulse rounded" />
+                      <div className="bg-muted/50 h-4 w-full animate-pulse rounded" />
+                      <div className="bg-muted/50 h-4 w-3/4 animate-pulse rounded" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {endpointsList.map((endpoint: EndpointUI) => (
+                <Card key={endpoint.id} className="flex flex-col">
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="flex items-center gap-4">
+                        <Webhook className="text-muted-foreground h-6 w-6" />
+                        <div>
+                          <CardTitle>
+                            {endpoint.name ?? "Unnamed Endpoint"}
+                          </CardTitle>
+                          <Badge
+                            variant={endpoint.isActive ? "default" : "outline"}
+                            className="mt-1"
+                          >
+                            {endpoint.isActive ? "Active" : "Inactive"}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <div className="text-muted-foreground text-sm">
+                          {endpoint.deliveryCount ?? 0} deliveries
+                        </div>
+                        <Button variant="ghost" size="sm" asChild>
+                          <Link href={`/admin/webhooks/${endpoint.id}`}>
+                            <Settings className="h-4 w-4" />
+                          </Link>
+                        </Button>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="text-muted-foreground text-sm">
-                        {endpoint.deliveryCount ?? 0} deliveries
+                  </CardHeader>
+                  <CardContent className="flex-grow space-y-4">
+                    <div>
+                      <h4 className="mb-2 font-semibold">Endpoint URL</h4>
+                      <p className="text-muted-foreground font-mono text-sm break-all">
+                        {endpoint.url}
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="mb-2 font-semibold">Configuration</h4>
+                      <div className="space-y-1 text-sm">
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">Method:</span>
+                          <span>{endpoint.method ?? "POST"}</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            Timeout:
+                          </span>
+                          <span>{endpoint.timeout ?? 30}s</span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-muted-foreground">
+                            Retries:
+                          </span>
+                          <span>{endpoint.maxRetries ?? 3}</span>
+                        </div>
                       </div>
-                      <Button variant="ghost" size="sm" asChild>
-                        <Link href={`/admin/webhooks/${endpoint.id}`}>
-                          <Settings className="h-4 w-4" />
-                        </Link>
+                    </div>
+                    <div>
+                      <h4 className="mb-2 font-semibold">Recent Deliveries</h4>
+                      {deliveriesList &&
+                      deliveriesList.filter(
+                        (d: DeliveryUI) => d.endpointId === endpoint.id,
+                      ).length > 0 ? (
+                        <div className="space-y-2">
+                          {deliveriesList
+                            .filter(
+                              (d: DeliveryUI) => d.endpointId === endpoint.id,
+                            )
+                            .slice(0, 3)
+                            .map((delivery: DeliveryUI) => (
+                              <div
+                                key={delivery.id}
+                                className="flex items-center justify-between text-xs"
+                              >
+                                <div className="flex items-center gap-2">
+                                  {getStatusIcon(delivery.status)}
+                                  <span className="capitalize">
+                                    {delivery.status}
+                                  </span>
+                                </div>
+                                <span className="text-muted-foreground">
+                                  {formatTimestamp(delivery.timestamp)}
+                                </span>
+                              </div>
+                            ))}
+                        </div>
+                      ) : (
+                        <p className="text-muted-foreground text-sm italic">
+                          No recent deliveries
+                        </p>
+                      )}
+                    </div>
+                  </CardContent>
+                  <div className="border-t p-4">
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => window.open(endpoint.url, "_blank")}
+                        className="flex-1"
+                      >
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Test
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleDeleteEndpoint(endpoint.id)}
+                        className="flex-1"
+                        color="destructive"
+                      >
+                        <Trash2 className="mr-2 h-4 w-4" />
+                        Delete
                       </Button>
                     </div>
                   </div>
-                </CardHeader>
-                <CardContent className="flex-grow space-y-4">
-                  <div>
-                    <h4 className="mb-2 font-semibold">Endpoint URL</h4>
-                    <p className="text-muted-foreground font-mono text-sm break-all">
-                      {endpoint.url}
-                    </p>
-                  </div>
-                  <div>
-                    <h4 className="mb-2 font-semibold">Configuration</h4>
-                    <div className="space-y-1 text-sm">
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Method:</span>
-                        <span>{endpoint.method ?? "POST"}</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Timeout:</span>
-                        <span>{endpoint.timeout ?? 30}s</span>
-                      </div>
-                      <div className="flex justify-between">
-                        <span className="text-muted-foreground">Retries:</span>
-                        <span>{endpoint.maxRetries ?? 3}</span>
-                      </div>
-                    </div>
-                  </div>
-                  <div>
-                    <h4 className="mb-2 font-semibold">Recent Deliveries</h4>
-                    {deliveriesList &&
-                    deliveriesList.filter(
-                      (d: DeliveryUI) => d.endpointId === endpoint.id,
-                    ).length > 0 ? (
-                      <div className="space-y-2">
-                        {deliveriesList
-                          .filter(
-                            (d: DeliveryUI) => d.endpointId === endpoint.id,
-                          )
-                          .slice(0, 3)
-                          .map((delivery: DeliveryUI) => (
-                            <div
-                              key={delivery.id}
-                              className="flex items-center justify-between text-xs"
-                            >
-                              <div className="flex items-center gap-2">
-                                {getStatusIcon(delivery.status)}
-                                <span className="capitalize">
-                                  {delivery.status}
-                                </span>
-                              </div>
-                              <span className="text-muted-foreground">
-                                {formatTimestamp(delivery.timestamp)}
-                              </span>
-                            </div>
-                          ))}
-                      </div>
-                    ) : (
-                      <p className="text-muted-foreground text-sm italic">
-                        No recent deliveries
-                      </p>
-                    )}
-                  </div>
-                </CardContent>
-                <div className="border-t p-4">
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => window.open(endpoint.url, "_blank")}
-                      className="flex-1"
-                    >
-                      <ExternalLink className="mr-2 h-4 w-4" />
-                      Test
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteEndpoint(endpoint.id)}
-                      className="flex-1"
-                      color="destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete
-                    </Button>
-                  </div>
-                </div>
-              </Card>
-            ))}
-          </div>
+                </Card>
+              ))}
+            </div>
+          )}
 
           <Separator className="my-8" />
 

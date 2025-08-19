@@ -9,8 +9,8 @@ export function SkeletonCard() {
         <Skeleton className="h-4 w-[250px]" />
       </CardHeader>
       <CardContent>
-        <div className="space-y-2">
-          <Skeleton className="h-4 w-full" />
+        <div className="min-w-0 space-y-2">
+          <Skeleton className="h-4 w-full max-w-full" />
           <Skeleton className="h-4 w-[80%]" />
         </div>
       </CardContent>
@@ -40,10 +40,10 @@ export function SkeletonStatCard() {
 
 export function SkeletonUserCard() {
   return (
-    <Card variant="elevated">
-      <CardContent className="p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-4">
+    <Card className="min-h-[260px]">
+      <CardHeader className="gap-0">
+        <div className="flex items-start justify-between">
+          <div className="flex items-center gap-4">
             <div className="relative">
               <Skeleton className="h-12 w-12 rounded-full" />
               <div className="from-primary/20 absolute inset-0 animate-pulse rounded-full bg-gradient-to-br to-transparent" />
@@ -53,16 +53,27 @@ export function SkeletonUserCard() {
               <Skeleton className="h-4 w-[200px]" />
             </div>
           </div>
-          <div className="flex items-center gap-4">
-            <div className="space-y-2 text-right">
-              <div className="flex gap-1">
-                <Skeleton className="h-5 w-12 rounded-md" />
-                <Skeleton className="h-5 w-12 rounded-md" />
-              </div>
-              <Skeleton className="h-3 w-[60px]" />
-            </div>
-            <Skeleton className="h-9 w-[100px] rounded-md" />
+          <div>
+            <Skeleton className="h-8 w-8 rounded-md" />
           </div>
+        </div>
+      </CardHeader>
+      <CardContent className="flex-grow space-y-4">
+        <div>
+          <div className="mb-2 h-5 w-[140px]">
+            <Skeleton className="h-5 w-[140px]" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Skeleton className="h-6 w-16 rounded-full" />
+            <Skeleton className="h-6 w-16 rounded-full" />
+            <Skeleton className="h-6 w-16 rounded-full" />
+          </div>
+        </div>
+        <div>
+          <div className="mb-2 h-5 w-[180px]">
+            <Skeleton className="h-5 w-[180px]" />
+          </div>
+          <Skeleton className="h-4 w-[120px]" />
         </div>
       </CardContent>
     </Card>
