@@ -56,6 +56,17 @@ export const userRouter = createTRPCRouter({
       };
     }),
 
+  // System-level statistics for admins
+  getSystemStats: adminProcedure.query(async ({ ctx }) => {
+    const now = new Date();
+    const [totalUsers, activeSessions] = await ctx.db.$transaction([
+      ctx.db.user.count(),
+      ctx.db.session.count({ where: { expires: { gt: now } } }),
+    ]);
+
+    return { totalUsers, activeSessions };
+  }),
+
   setUserRoles: adminProcedure
     .input(z.object({ userId: z.string(), roleNames: z.array(z.string()) }))
     .mutation(async ({ ctx, input }) => {

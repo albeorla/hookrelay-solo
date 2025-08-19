@@ -27,7 +27,10 @@
     "test:unit": "vitest run --pool=threads",
     "test:unit:watch": "vitest --pool=threads",
     "storybook": "storybook dev -p 6006",
-    "build-storybook": "storybook build"
+    "build-storybook": "storybook build",
+    "e2e:install": "cd e2e && npm ci && npm run install:browsers",
+    "e2e": "BASE_URL=http://localhost:3001 ENABLE_TEST_AUTH=true AUTH_SECRET=${AUTH_SECRET:-test-secret-for-playwright} cd e2e && npx playwright test --reporter=line",
+    "e2e:headed": "BASE_URL=http://localhost:3001 ENABLE_TEST_AUTH=true AUTH_SECRET=${AUTH_SECRET:-test-secret-for-playwright} cd e2e && npx playwright test --headed"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.7.2",
@@ -35,7 +38,6 @@
     "@aws-sdk/client-s3": "^3.864.0",
     "@aws-sdk/client-sqs": "^3.864.0",
     "@hookform/resolvers": "^5.1.1",
-    "@playwright/test": "^1.54.1",
     "@prisma/client": "^6.5.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",

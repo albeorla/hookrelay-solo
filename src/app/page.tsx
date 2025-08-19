@@ -76,6 +76,9 @@ export default function Dashboard() {
 
   const isAdmin = session?.user?.roles?.includes("ADMIN");
 
+  const { data: systemStats, isLoading: isLoadingSystem } =
+    api.user.getSystemStats.useQuery(undefined, { enabled: !!isAdmin });
+
   const getGreeting = () => {
     const hour = new Date().getHours();
     if (hour < 12) return "Good morning";
@@ -236,13 +239,21 @@ export default function Dashboard() {
                     <span className="text-muted-foreground text-sm">
                       Total Users
                     </span>
-                    <span className="font-semibold">Loading...</span>
+                    <span className="font-semibold">
+                      {isLoadingSystem
+                        ? "Loading..."
+                        : (systemStats?.totalUsers ?? 0)}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground text-sm">
                       Active Sessions
                     </span>
-                    <span className="font-semibold">Loading...</span>
+                    <span className="font-semibold">
+                      {isLoadingSystem
+                        ? "Loading..."
+                        : (systemStats?.activeSessions ?? 0)}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-muted-foreground text-sm">

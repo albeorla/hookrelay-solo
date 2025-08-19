@@ -2,6 +2,9 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export async function middleware(request: NextRequest) {
+  // E2E bypass for local test auth: allow requests with a special header
+  // Keep auth checks consistent; no bypass by default
+
   const isAuthPage = request.nextUrl.pathname === "/auth";
   const isHealth = request.nextUrl.pathname.startsWith("/api/health");
   if (isHealth) return NextResponse.next();

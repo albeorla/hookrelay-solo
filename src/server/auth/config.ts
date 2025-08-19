@@ -35,9 +35,12 @@ const isTestMode =
   config.auth.enableTestAuth ||
   process.env.ENABLE_TEST_AUTH === "true";
 
+const useJwtSessionForE2E =
+  isTestMode && process.env.E2E_JWT_SESSION === "true";
+
 export const authConfig = {
   session: {
-    strategy: "database" as const,
+    strategy: useJwtSessionForE2E ? "jwt" : "database",
   },
   providers: [
     DiscordProvider({
