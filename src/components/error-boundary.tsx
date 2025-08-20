@@ -366,23 +366,13 @@ export function withErrorBoundary<T extends object>(
 
 /**
  * Specialized error boundary for webhook-related components
+ * Uses a simplified approach without function props to work with server components
  */
 export const WebhookErrorBoundary: React.FC<{ children: ReactNode }> = ({
   children,
 }) => {
-  const handleWebhookError = (error: Error, errorInfo: ErrorInfo) => {
-    console.error("Webhook component error:", { error, errorInfo });
-
-    // Log to webhook-specific error tracking
-    if (error.message.includes("webhook") || error.stack?.includes("webhook")) {
-      console.warn(
-        "Webhook-related error detected, this might affect webhook functionality",
-      );
-    }
-  };
-
   return (
-    <ErrorBoundary onError={handleWebhookError} resetOnPropsChange={true}>
+    <ErrorBoundary showDetails={process.env.NODE_ENV === "development"}>
       {children}
     </ErrorBoundary>
   );

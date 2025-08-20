@@ -6,13 +6,7 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <ErrorBoundary
-      onError={(error, errorInfo) => {
-        console.error("Admin layout error:", { error, errorInfo });
-        // In production, you might want to send this to your error reporting service
-      }}
-      resetOnPropsChange={true}
-    >
+    <ErrorBoundary showDetails={process.env.NODE_ENV === "development"}>
       {children}
     </ErrorBoundary>
   );
