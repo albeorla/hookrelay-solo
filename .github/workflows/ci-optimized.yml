@@ -316,6 +316,9 @@ jobs:
       - name: 🧪 Run unit tests
         run: yarn test:unit
 
+      - name: 🎨 Run Storybook visual tests
+        run: yarn test:storybook
+
 
   # ============================================================================
   # FAST SECURITY AUDIT
