@@ -3,9 +3,6 @@
 import React from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { toast } from "sonner";
-import { Button } from "~/components/ui/button";
 import {
   Form,
   FormControl,
@@ -23,45 +20,24 @@ import {
   SelectTrigger,
   SelectValue,
 } from "~/components/ui/select";
-import { api } from "~/trpc/react";
-import { Loader2 } from "lucide-react";
 import { Switch } from "~/components/ui/switch";
 import { Textarea } from "~/components/ui/textarea";
-
-const webhookEndpointSchema = z
-  .object({
-    endpointId: z
-      .string()
-      .min(1, "Endpoint ID is required")
-      .regex(
-        /^[a-zA-Z0-9_-]+$/,
-        "Only letters, numbers, hyphens and underscores allowed",
-      ),
-    destUrl: z.string().url("Must be a valid URL"),
-    hmacMode: z.enum(["stripe", "github", "generic"]).optional(),
-    secret: z.string().optional(),
-    description: z.string().max(500).optional(),
-  })
-  .refine(
-    (data) => {
-      if (data.hmacMode && !data.secret) {
-        return false;
-      }
-      return true;
-    },
-    {
-      message: "Secret is required when HMAC mode is selected",
-      path: ["secret"],
-    },
-  );
-
-type WebhookEndpointFormData = z.infer<typeof webhookEndpointSchema>;
+import { LoadingButton } from "~/components/ui/loading-button";
+import { Button } from "~/components/ui/button";
+import { api } from "~/trpc/react";
+import { toastMessages } from "~/lib/toast-messages";
+import {
+  webhookEndpointSchema,
+  type WebhookEndpointFormData,
+} from "~/lib/validation-schemas";
 
 interface WebhookEndpointFormProps {
   onSuccess?: () => void;
 }
 
 export function WebhookEndpointForm({ onSuccess }: WebhookEndpointFormProps) {
+  const [isActive, setIsActive] = React.useState(true);
+
   const form = useForm<WebhookEndpointFormData>({
     resolver: zodResolver(webhookEndpointSchema),
     defaultValues: {
@@ -72,20 +48,21 @@ export function WebhookEndpointForm({ onSuccess }: WebhookEndpointFormProps) {
       description: "",
     },
   });
-  const [isActive, setIsActive] = React.useState(true);
 
   const createEndpoint = api.webhook.createEndpoint.useMutation({
     onSuccess: () => {
-      toast.success("Webhook endpoint created successfully");
+      toastMessages.webhook.endpoint.created();
       form.reset();
       onSuccess?.();
     },
     onError: (error) => {
-      toast.error(`Failed to create endpoint: ${error.message}`);
+      const errorMessage =
+        error instanceof Error ? error.message : "Unknown error";
+      toastMessages.webhook.endpoint.createFailed(errorMessage);
     },
   });
 
-  const onSubmit = async (data: WebhookEndpointFormData) => {
+  const handleSubmit = async (data: WebhookEndpointFormData) => {
     await createEndpoint.mutateAsync({
       endpointId: data.endpointId,
       destUrl: data.destUrl,
@@ -100,7 +77,7 @@ export function WebhookEndpointForm({ onSuccess }: WebhookEndpointFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="endpointId"
@@ -221,12 +198,14 @@ export function WebhookEndpointForm({ onSuccess }: WebhookEndpointFormProps) {
                   <Input
                     type="password"
                     placeholder="your-secret-key"
+                    autoComplete="new-password"
                     {...field}
                     disabled={isSubmitting}
                   />
                 </FormControl>
                 <FormDescription>
-                  The secret key for HMAC signature verification.
+                  The secret key for HMAC signature verification. This will be
+                  securely stored and used for webhook validation.
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -243,10 +222,13 @@ export function WebhookEndpointForm({ onSuccess }: WebhookEndpointFormProps) {
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isSubmitting ? "Creating..." : "Create Endpoint"}
-          </Button>
+          <LoadingButton
+            type="submit"
+            loading={isSubmitting}
+            loadingText="Creating..."
+          >
+            Create Endpoint
+          </LoadingButton>
         </div>
       </form>
     </Form>

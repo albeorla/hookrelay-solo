@@ -3,8 +3,6 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
-import { toast } from "sonner";
 import { Button } from "~/components/ui/button";
 import {
   Form,
@@ -18,15 +16,10 @@ import {
 import { Input } from "~/components/ui/input";
 import { Textarea } from "~/components/ui/textarea";
 import { Checkbox } from "~/components/ui/checkbox";
+import { LoadingButton } from "~/components/ui/loading-button";
 import { api } from "~/trpc/react";
-import { Loader2 } from "lucide-react";
-
-const roleSchema = z.object({
-  name: z.string().min(1, "Role name is required"),
-  description: z.string().optional(),
-});
-
-type RoleFormData = z.infer<typeof roleSchema>;
+import { toastMessages } from "~/lib/toast-messages";
+import { roleSchema, type RoleFormData } from "~/lib/validation-schemas";
 
 interface Permission {
   id: string;
@@ -78,7 +71,7 @@ export function RoleForm({ role, permissions, onSuccess }: RoleFormProps) {
     }
   }, [role, form]);
 
-  const onSubmit = async (data: RoleFormData) => {
+  const handleRoleSubmit = async (data: RoleFormData) => {
     try {
       let roleId: string;
       if (role) {
@@ -104,7 +97,7 @@ export function RoleForm({ role, permissions, onSuccess }: RoleFormProps) {
           ),
         ]);
 
-        toast.success("Role updated successfully");
+        toastMessages.role.updated();
       } else {
         // Create new role
         const newRole = await createRole.mutateAsync(data);
@@ -116,11 +109,12 @@ export function RoleForm({ role, permissions, onSuccess }: RoleFormProps) {
           ),
         );
 
-        toast.success("Role created successfully");
+        toastMessages.role.created();
       }
+      form.reset();
       onSuccess();
     } catch (error) {
-      toast.error("Failed to save role. Please try again.");
+      toastMessages.role.saveFailed();
       console.error("Error saving role:", error);
     }
   };
@@ -133,7 +127,7 @@ export function RoleForm({ role, permissions, onSuccess }: RoleFormProps) {
     );
   };
 
-  const isSubmitting =
+  const allMutationsLoading =
     createRole.isPending ||
     updateRole.isPending ||
     assignPermission.isPending ||
@@ -141,7 +135,10 @@ export function RoleForm({ role, permissions, onSuccess }: RoleFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form
+        onSubmit={form.handleSubmit(handleRoleSubmit)}
+        className="space-y-6"
+      >
         <FormField
           control={form.control}
           name="name"
@@ -152,7 +149,7 @@ export function RoleForm({ role, permissions, onSuccess }: RoleFormProps) {
                 <Input
                   placeholder="e.g., Content Editor"
                   {...field}
-                  disabled={isSubmitting || role?.name === "ADMIN"}
+                  disabled={allMutationsLoading || role?.name === "ADMIN"}
                 />
               </FormControl>
               <FormMessage />
@@ -171,7 +168,7 @@ export function RoleForm({ role, permissions, onSuccess }: RoleFormProps) {
                   placeholder="Describe what this role can do"
                   className="min-h-[100px]"
                   {...field}
-                  disabled={isSubmitting}
+                  disabled={allMutationsLoading}
                 />
               </FormControl>
               <FormMessage />
@@ -191,7 +188,7 @@ export function RoleForm({ role, permissions, onSuccess }: RoleFormProps) {
                   id={permission.id}
                   checked={selectedPermissions.includes(permission.id)}
                   onCheckedChange={() => handlePermissionToggle(permission.id)}
-                  disabled={isSubmitting || role?.name === "ADMIN"}
+                  disabled={allMutationsLoading || role?.name === "ADMIN"}
                 />
                 <label
                   htmlFor={permission.id}
@@ -209,14 +206,17 @@ export function RoleForm({ role, permissions, onSuccess }: RoleFormProps) {
             type="button"
             variant="outline"
             onClick={onSuccess}
-            disabled={isSubmitting}
+            disabled={allMutationsLoading}
           >
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
-            {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isSubmitting ? "Saving..." : role ? "Update Role" : "Create Role"}
-          </Button>
+          <LoadingButton
+            type="submit"
+            loading={allMutationsLoading}
+            loadingText="Saving..."
+          >
+            {role ? "Update Role" : "Create Role"}
+          </LoadingButton>
         </div>
       </form>
     </Form>
