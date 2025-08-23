@@ -1,6 +1,7 @@
 "use client";
 
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import { AppShell } from "./app-shell";
 import { WebSocketProvider } from "~/contexts/websocket-context";
 
@@ -10,8 +11,9 @@ interface AuthenticatedLayoutProps {
 
 export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
   const { status } = useSession();
+  const router = useRouter();
 
-  if (status !== "authenticated") {
+  if (status === "loading") {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
@@ -20,6 +22,11 @@ export function AuthenticatedLayout({ children }: AuthenticatedLayoutProps) {
         </div>
       </div>
     );
+  }
+
+  if (status === "unauthenticated") {
+    router.replace("/auth");
+    return null;
   }
 
   return (
